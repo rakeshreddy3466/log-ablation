@@ -1,0 +1,196 @@
+{
+ "n": 16,
+ "first_error_acc": 0.3125,
+ "root_cause_acc": 0.125,
+ "label_distribution": {
+  "E3": 4,
+  "E1": 3,
+  "R1": 2,
+  "E2": 2,
+  "I3": 1,
+  "I1": 1,
+  "R2": 1,
+  "invalid": 1,
+  "I2": 1
+ },
+ "top_label": "E3",
+ "top_share": 0.25,
+ "valid": 15,
+ "degenerate": true,
+ "per_variant_correct": {
+  "E1": 1,
+  "E2": 0,
+  "E3": 0,
+  "R1": 0,
+  "R2": 1,
+  "I1": 0,
+  "I2": 0,
+  "I3": 0
+ },
+ "mean_s": 28.0151875,
+ "tokens_max": 4095,
+ "version": "v2",
+ "model": "qwen2.5:7b",
+ "predictions": [
+  {
+   "run_id": "sc-01172-E1",
+   "true_variant": "E1",
+   "pred_first_error": "evidence_agent",
+   "pred_variant": "E1",
+   "confidence": 0.8,
+   "valid": true,
+   "wall_s": 29.898,
+   "reason": "[{\"step\":\"evidence_agent\",\"span\":\"evidence_agent\",\"input\":{\"incident_id\":\"INC-01172\",\"reported_at\":\"2025-03-10T09:45:00Z\",\"symptom_service\":\"api-gateway\",\"summary\":\"Critical a ...  unknown."
+  },
+  {
+   "run_id": "sc-01186-E1",
+   "true_variant": "E1",
+   "pred_first_error": "evidence_agent",
+   "pred_variant": "E3",
+   "confidence": 0.95,
+   "valid": true,
+   "wall_s": 21.892,
+   "reason": "[{\"step\":\"evidence_agent\",\"span\":\"evidence_agent\",\"data\":{\"input\":{\"incident_id\":\"INC-01186\",\"reported_at\":\"2025-03-10T09:36:00Z\",\"symptom_service\":\"api-gateway\",\"summary\":\"Critical a ...  unknown."
+  },
+  {
+   "run_id": "sc-01150-E2",
+   "true_variant": "E2",
+   "pred_first_error": "reasoning_agent",
+   "pred_variant": "R1",
+   "confidence": 0.9,
+   "valid": true,
+   "wall_s": 25.694,
+   "reason": "evidence_agent: The output includes findings and the affected_service, which suggests no faults at this step. handover_1: The evidence bundle passed to the reasoning agent includes findings and the affected_service, which suggests no faults at this step. reasoning_agent: The reasoning summary mentions the suspected service 'auth', but the root cause is 'bad_deploy', which suggests a fault at this step. action_agent: The action chosen is 'rollback_deploy' for the 'auth' service, which is consistent with the reasoning summary, suggesting no faults at this step."
+  },
+  {
+   "run_id": "sc-01110-E2",
+   "true_variant": "E2",
+   "pred_first_error": "evidence_agent",
+   "pred_variant": "E1",
+   "confidence": 0.9,
+   "valid": true,
+   "wall_s": 23.476,
+   "reason": "evidence_agent: incident_id, affected_service, time_window, findings, evidence_confidence\nhandover_1: passed on findings, affected_service, time_window, evidence_confidence\nhandover_2: passed on root_cause, suspected_service, reasoning_summary, confidence, evidence_used\naction_agent: root_cause, suspected_service, reasoning_summary, confidence, evidence_used"
+  },
+  {
+   "run_id": "sc-01192-E3",
+   "true_variant": "E3",
+   "pred_first_error": "evidence_agent",
+   "pred_variant": "E1",
+   "confidence": 0.9999999999999999,
+   "valid": true,
+   "wall_s": 49.517,
+   "reason": "[{\"step\":\"evidence_agent\",\"span\":\"evidence_agent\",\"data\":{\"input\":{\"incident_id\":\"INC-01192\",\"reported_at\":\"2025-03-10T09:42:00Z\",\"symptom_service\":\"checkout\",\"summary\":\"Warning alert HighErrorRate fired on checkout at 2025-03-10T09:42:00Z; customers are affected and the cause and ... 10 findings (most important first, facts only, no repeats), the service where the problem originates, and your confidence in the evidence (0 to 1).\"},\"output\":{\"incident_id\":\"INC-01192\",\"affected_service\":\"checkout\",\"time_window\":[\"2025-03-10T09:22:00Z\",\"2025-03-10T09:47:00Z\"],\"findings\":[{\"id\":\"f1\",\"source\":\"get_alerts\",\"value\":\"HighErrorRate ... 09:42:00Z\"},{\"id\":\"f2\",\"source\":\"get_metrics\",\"value\":\"error_rate ... to 0.2585\"},{\"id\":\"f3\",\"source\":\"get_logs\",\"value\":\"WARN messa ... 09:45:25Z\"},{\"id\":\"f4\",\"source\":\"get_metrics\",\"value\":\"db_pool_in ...  to 17.32\"},{\"id\":\"f5\",\"source\":\"get_logs\",\"value\":\"ERROR mess ... 09:39:24Z\"},{\"id\":\"f6\",\"source\":\"get_metrics\",\"value\":\"payment_db ...  to 12.25\"},{\"id\":\"f7\",\"source\":\"get_logs\",\"value\":\"INFO messa ... 09:34:29Z\"},{\"id\":\"f8\",\"source\":\"get_logs\",\"value\":\"INFO messa ... 09:35:28Z\"},{\"id\":\"f9\",\"source\":\"get_logs\",\"value\":\"INFO messa ... 09:43:04Z\"},{\"id\":\""
+  },
+  {
+   "run_id": "sc-01176-E3",
+   "true_variant": "E3",
+   "pred_first_error": "handover_2",
+   "pred_variant": "I3",
+   "confidence": 0.9,
+   "valid": true,
+   "wall_s": 23.369,
+   "reason": "evidence_agent: incident_id, affected_service, time_window, findings, evidence_confidence\nhandover_1: affected_service, time_window, findings, evidence_confidence\nhandover_2: root_cause, suspected_service, reasoning_summary, confidence, evidence_used\naction_agent: root_cause, suspected_service, reasoning_summary, confidence, evidence_used"
+  },
+  {
+   "run_id": "sc-01170-R1",
+   "true_variant": "R1",
+   "pred_first_error": "evidence_agent",
+   "pred_variant": "E3",
+   "confidence": 0.9,
+   "valid": true,
+   "wall_s": 24.14,
+   "reason": "[{\"step\":\"evidence_agent\",\"span\":\"evidence_agent\",\"data\":{\"input\":{\"incident_id\":\"INC-01170\",\"reported_at\":\"2025-03-10T09:33:00Z\",\"symptom_service\":\"api-gateway\",\"summary\":\"Critical a ...  unknown."
+  },
+  {
+   "run_id": "sc-01103-R1",
+   "true_variant": "R1",
+   "pred_first_error": "handover_1",
+   "pred_variant": "I1",
+   "confidence": 1.0,
+   "valid": true,
+   "wall_s": 25.412,
+   "reason": "evidence_agent: The evidence bundle includes findings and the affected_service, but the time_window is correct. handover_1: The evidence bundle passed to the reasoning agent is missing the affected_service field. reasoning_agent: The reasoning summary suggests a root cause of bad_deploy, using findings f1 to f7. action_agent: The action is to rollback_deploy to the checkout service with high confidence."
+  },
+  {
+   "run_id": "sc-01186-R2",
+   "true_variant": "R2",
+   "pred_first_error": "evidence_agent",
+   "pred_variant": "E3",
+   "confidence": 1.0,
+   "valid": true,
+   "wall_s": 18.489,
+   "reason": ""
+  },
+  {
+   "run_id": "sc-01171-R2",
+   "true_variant": "R2",
+   "pred_first_error": "reasoning_agent",
+   "pred_variant": "R2",
+   "confidence": 0.9,
+   "valid": true,
+   "wall_s": 27.08,
+   "reason": "evidence_agent: The output includes findings from the 'api-gateway' and 'auth' services, and the affected_service is 'api-gateway'. handover_1: The evidence bundle passed to the reasoning agent includes findings from both services. reasoning_agent: The reasoning summary suggests the root cause is a 'memory_leak' in the 'auth' service. handover_2: The diagnosis passed to the action agent includes the suspected_service as 'auth'. action_agent: The action chosen is to restart the 'auth' service. The output is consistent with the input, and there are no inconsistencies or changes that suggest an error."
+  },
+  {
+   "run_id": "sc-01174-I1",
+   "true_variant": "I1",
+   "pred_first_error": "invalid",
+   "pred_variant": "invalid",
+   "confidence": null,
+   "valid": false,
+   "wall_s": 40.944,
+   "reason": ""
+  },
+  {
+   "run_id": "sc-01186-I1",
+   "true_variant": "I1",
+   "pred_first_error": "evidence_agent",
+   "pred_variant": "E2",
+   "confidence": 0.95,
+   "valid": true,
+   "wall_s": 22.679,
+   "reason": "[{\"step\":\"evidence_agent\",\"span\":\"evidence_agent\",\"data\":{\"input\":{\"incident_id\":\"INC-01186\",\"reported_at\":\"2025-03-10T09:36:00Z\",\"symptom_service\":\"api-gateway\",\"summary\":\"Critical a ...  unknown."
+  },
+  {
+   "run_id": "sc-01112-I2",
+   "true_variant": "I2",
+   "pred_first_error": "reasoning_agent",
+   "pred_variant": "R1",
+   "confidence": 0.9,
+   "valid": true,
+   "wall_s": 24.621,
+   "reason": "evidence_agent: The output includes findings and the affected_service, which suggests no fault here. handover_1: Passed the findings and affected_service. handover_2: The diagnosis and suspected_service were passed correctly. action_agent: The action was chosen based on the diagnosis. reasoning_agent: The reasoning summary and root cause were provided correctly. evidence_agent: The output includes findings and the affected_service, which suggests no fault here."
+  },
+  {
+   "run_id": "sc-01152-I2",
+   "true_variant": "I2",
+   "pred_first_error": "evidence_agent",
+   "pred_variant": "E2",
+   "confidence": 0.99,
+   "valid": true,
+   "wall_s": 22.782,
+   "reason": "[{\"step\":\"evidence_agent\",\"span\":\"evidence_agent\",\"data\":{\"input\":{\"incident_id\":\"INC-01152\",\"reported_at\":\"2025-03-10T09:35:00Z\",\"symptom_service\":\"api-gateway\",\"summary\":\"Critical a ...  unknown."
+  },
+  {
+   "run_id": "sc-01139-I3",
+   "true_variant": "I3",
+   "pred_first_error": "evidence_agent",
+   "pred_variant": "E3",
+   "confidence": 0.99,
+   "valid": true,
+   "wall_s": 21.713,
+   "reason": "[{\"step\":\"evidence_agent\",\"span\":\"evidence_agent\",\"data\":{\"input\":{\"incident_id\":\"INC-01139\",\"reported_at\":\"2025-03-10T09:40:00Z\",\"symptom_service\":\"catalog\",\"summary\":\"Warning al ...  unknown."
+  },
+  {
+   "run_id": "sc-01135-I3",
+   "true_variant": "I3",
+   "pred_first_error": "handover_1",
+   "pred_variant": "I2",
+   "confidence": 0.8,
+   "valid": true,
+   "wall_s": 46.537,
+   "reason": "evidence_agent: {'incident_id': 'INC-01135', 'affected_service': 'api-gateway', 'time_window': ['2025-03-10T09:17:00Z', '2025-03-10T09:42:00Z'], 'findings': [{'id': 'f1', 'source': 'get_metrics', 'value': 'api-gateway ... max: 329.0'}, {'id': 'f2', 'source': 'get_logs', 'value': 'checkout.log ... v1/orders'}, {'id': 'f3', 'source': 'get_logs', 'value': 'auth.level ... ountCode'}, {'id': 'f4', 'source': 'get_logs', 'value': 'auth.level ... request body'}, {'id': 'f5', 'source': 'get_metrics', 'value': 'auth.error ... : 0.07754'}, {'id': 'f6', 'source': 'get_metrics', 'value': 'checkout.e ... : 0.07781'}, {'id': 'f7', 'source': 'get_logs', 'value': 'checkout.log ... -82034826'}], 'evidence_confidence': 0.8}\nhandover_1: {'incident_id': 'INC-01135', 'affected_service': 'api-gateway', 'time_window': ['2025-03-10T09:17:00Z', '2025-03-10T09:42:00Z'], 'findings': [{'id': 'f1', 'source': 'get_metrics', 'value': 'api-gateway ... max: 329.0'}, {'id': 'f2', 'source': 'get_logs', 'value': 'checkout.log ... v1/orders'}, {'id': 'f3', 'source': 'get_logs', 'value': 'auth.level ... ountCode'}, {'id': 'f4', 'source': 'get_logs', 'value': 'auth.level ... request body'}, {'id': 'f5', 'source': 'get_m\n"
+  }
+ ]
+}

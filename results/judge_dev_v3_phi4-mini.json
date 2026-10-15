@@ -1,0 +1,192 @@
+{
+ "n": 16,
+ "first_error_acc": 0.25,
+ "root_cause_acc": 0.125,
+ "label_distribution": {
+  "I2": 7,
+  "I1": 5,
+  "invalid": 2,
+  "E1": 1,
+  "I3": 1
+ },
+ "top_label": "I2",
+ "top_share": 0.4375,
+ "valid": 14,
+ "degenerate": true,
+ "per_variant_correct": {
+  "E1": 0,
+  "E2": 0,
+  "E3": 0,
+  "R1": 0,
+  "R2": 0,
+  "I1": 0,
+  "I2": 1,
+  "I3": 1
+ },
+ "mean_s": 17.2043125,
+ "tokens_max": 3468,
+ "version": "v3",
+ "model": "phi4-mini:latest",
+ "predictions": [
+  {
+   "run_id": "sc-01172-E1",
+   "true_variant": "E1",
+   "pred_first_error": "invalid",
+   "pred_variant": "invalid",
+   "confidence": null,
+   "valid": false,
+   "wall_s": 42.962,
+   "reason": ""
+  },
+  {
+   "run_id": "sc-01186-E1",
+   "true_variant": "E1",
+   "pred_first_error": "handover_1",
+   "pred_variant": "I1",
+   "confidence": 1.0,
+   "valid": true,
+   "wall_s": 18.053,
+   "reason": "evidence_agent: collected facts about an incident with an incident ID INC-01186, symptom service api-gateway, and a summary of 'Critical alert HighLatencyP95 fired on api-gateway at 2025-03-10T09:36:00Z; customers are affected and the cause ...'. The time window was [2025-03-10T09:16:00Z, 2025-03-10T09:41:00Z]. The findings included high latency and TLS certificate errors. The evidence confidence was 0.95.\nevidence_agent: passed the evidence bundle to handover_1.\nhandover_1: passed the diagnosis from the reasoning agent to the action agent.\nreasoning_agent: received the evidence bundle and decided the root cause to be 'expired_certificate' for the service api-gateway with a confidence of 0.95.\naction_agent: chose the remediation action 'renew_certificate' for the service api-gateway with a justification 'The diagnosis is that the certificate has expired.' and a confidence of 0.95."
+  },
+  {
+   "run_id": "sc-01150-E2",
+   "true_variant": "E2",
+   "pred_first_error": "handover_1",
+   "pred_variant": "I2",
+   "confidence": 0.5,
+   "valid": true,
+   "wall_s": 13.199,
+   "reason": "evidence_agent: collected facts with monitoring tools and wrote the evidence bundle. handover_1: passed the evidence bundle from the evidence agent to the reasoning agent. reasoning_agent: read the bundle and decided the root cause. handover_2: passed the diagnosis from the reasoning agent to the action agent. action_agent: chose the remediation action and its target service."
+  },
+  {
+   "run_id": "sc-01110-E2",
+   "true_variant": "E2",
+   "pred_first_error": "handover_1",
+   "pred_variant": "I2",
+   "confidence": 0.9,
+   "valid": true,
+   "wall_s": 20.375,
+   "reason": "evidence_agent: collected facts about an incident with an incident ID INC-01110, symptom service api-gateway, and a summary of 'Critical alert HighLatencyP95 fired on api-gateway at 2025-03-10T09:35:00Z; customers are affected and the cause unknown.' The time window was specified as ['2025-03-10T09:15:00Z', '2025-03-10T09:40:00Z']. Findings included high latency and memory usage issues. The evidence confidence was 0.8.\nevidence_agent: passed the evidence bundle to handover_1.\nhandover_1: passed the evidence bundle to reasoning_agent.\nreasoning_agent: received the evidence bundle and decided the root cause to be 'memory_leak' with a confidence of 0.8. The reasoning summary was 'The api-gateway shows high latency and memory usage is indicative of a memory leak.' The findings used were f3, f7, f8, and f9.\naction_agent: received the diagnosis and chose the action 'restart_service_open_bug' for the target service 'api-gateway' with a justification 'The diagnosis indicates a memory leak.' The confidence for this action was 0.7."
+  },
+  {
+   "run_id": "sc-01192-E3",
+   "true_variant": "E3",
+   "pred_first_error": "handover_1",
+   "pred_variant": "I1",
+   "confidence": 0.5,
+   "valid": true,
+   "wall_s": 12.804,
+   "reason": "evidence_agent collected incident details and metrics, including a high error rate on checkout. handover_1 passed this evidence to reasoning_agent without issues. reasoning_agent received the evidence and decided on a root cause, which was passed to action_agent without problems. action_agent chose a remediation action and target service, completing the run."
+  },
+  {
+   "run_id": "sc-01176-E3",
+   "true_variant": "E3",
+   "pred_first_error": "handover_1",
+   "pred_variant": "I1",
+   "confidence": 1.0,
+   "valid": true,
+   "wall_s": 16.849,
+   "reason": "evidence_agent: collected facts about an incident with an incident ID, reported at a specific time, symptom service, summary, and time window. The affected service was identified as 'api-gateway' with findings related to high latency and errors. The confidence in the evidence was 0.8.\nhandover_1: passed the evidence bundle to the reasoning agent. The affected service remained 'api-gateway' with the same findings and confidence.\nreasoning_agent: received the evidence bundle and decided on the root cause as 'bad_deploy' with a suspected service 'auth'. The reasoning summary was provided with a confidence of 0.7 and the findings used were listed.\naction_agent: received the diagnosis and chose the remediation action 'rollback_deploy' for the service 'auth'. A justification was provided with a confidence of 0.7.\n"
+  },
+  {
+   "run_id": "sc-01170-R1",
+   "true_variant": "R1",
+   "pred_first_error": "handover_1",
+   "pred_variant": "I2",
+   "confidence": 0.9,
+   "valid": true,
+   "wall_s": 13.529,
+   "reason": "evidence_agent: collected facts with monitoring tools and wrote the evidence bundle. handover_1: passed the evidence bundle from the evidence agent to the reasoning agent. reasoning_agent: read the bundle and decided the root cause. handover_2: passed the diagnosis from the reasoning agent to the action agent. action_agent: chose the remediation action and its target service."
+  },
+  {
+   "run_id": "sc-01103-R1",
+   "true_variant": "R1",
+   "pred_first_error": "handover_1",
+   "pred_variant": "I1",
+   "confidence": 0.5,
+   "valid": true,
+   "wall_s": 24.131,
+   "reason": "evidence_agent: collected facts with monitoring tools and wrote the evidence bundle. - came out: incident_id: INC-01103, affected_service: checkout, time_window: [2025-03-10T09:21:00Z, 2025-03-10T09:46:00Z], findings: [f1, f2, f3, f4, f5, f6, f7], evidence_confidence: 0.8\nhandover_1: passed the evidence bundle from the evidence agent to the reasoning agent. - came out: incident_id: INC-01103, affected_service: checkout, time_window: [2025-03-10T09:21:00Z, 2025-03-10T09:46:00Z], findings: [f1, f2, f3, f4, f5, f6, f7], evidence_confidence: 0.8\nreasoning_agent: read the bundle and decided the root cause. - came out: root_cause: bad_deploy, suspected_service: checkout, reasoning_summary: The checkout service shows a significant increase in error rate, confidence: 0.8, evidence_used: [f1, f2, f3, f4, f5, f6, f7]\nhandover_2: passed the diagnosis from the reasoning agent to the action agent. - came out: root_cause: bad_deploy, suspected_service: checkout, reasoning_summary: The checkout service shows a significant increase in error rate, confidence: 0.8, evidence_used: [f1, f2, f3, f4, f5, f6, f7]\naction_agent: chose the remediation action and its target service. - came out: action: 'roll"
+  },
+  {
+   "run_id": "sc-01186-R2",
+   "true_variant": "R2",
+   "pred_first_error": "invalid",
+   "pred_variant": "invalid",
+   "confidence": null,
+   "valid": false,
+   "wall_s": 17.763,
+   "reason": ""
+  },
+  {
+   "run_id": "sc-01171-R2",
+   "true_variant": "R2",
+   "pred_first_error": "handover_1",
+   "pred_variant": "I2",
+   "confidence": 0.5,
+   "valid": true,
+   "wall_s": 16.457,
+   "reason": "evidence_agent: collected facts about an incident with an incident ID, reported symptom service, summary, and time window. The affected service was identified as 'api-gateway' with findings related to high latency and errors. The confidence in the evidence was 0.8.\nhandover_1: passed the evidence bundle to the reasoning agent. The bundle included incident ID, affected service, time window, findings, and evidence confidence.\nreasoning_agent: received the evidence bundle and decided on the root cause as 'memory_leak' with a suspected service 'auth'. The reasoning summary was provided along with confidence and evidence used.\naction_agent: received the diagnosis and chose the remediation action 'restart_service_open_bug' for the 'auth' service with a justification and confidence level.\n"
+  },
+  {
+   "run_id": "sc-01174-I1",
+   "true_variant": "I1",
+   "pred_first_error": "evidence_agent",
+   "pred_variant": "E1",
+   "confidence": 0.5,
+   "valid": true,
+   "wall_s": 16.726,
+   "reason": "1. evidence_agent collected facts about an incident with an incorrect time window, reporting it as 'auth' instead of 'api-gateway'. 2. handover_1 passed on the evidence bundle correctly. 3. reasoning_agent received the diagnosis and decided the root cause as 'expired_certificate' for 'payment-db' with a high confidence level. 4. action_agent received the diagnosis and chose the action 'renew_certificate' for 'payment-db' with a high confidence level. 5. The final answer was 'expired_certificate' for 'payment-db' with a high confidence level."
+  },
+  {
+   "run_id": "sc-01186-I1",
+   "true_variant": "I1",
+   "pred_first_error": "handover_1",
+   "pred_variant": "I2",
+   "confidence": 0.5,
+   "valid": true,
+   "wall_s": 13.05,
+   "reason": "evidence_agent collected incident details and metrics, including a high latency alert and TLS certificate expiration alert. handover_1 passed the evidence bundle to the reasoning agent. reasoning_agent used the evidence to diagnose an expired certificate in the api-gateway. handover_2 passed the diagnosis to the action agent. action_agent chose to renew the certificate for the api-gateway."
+  },
+  {
+   "run_id": "sc-01112-I2",
+   "true_variant": "I2",
+   "pred_first_error": "handover_1",
+   "pred_variant": "I2",
+   "confidence": 0.5,
+   "valid": true,
+   "wall_s": 10.308,
+   "reason": ""
+  },
+  {
+   "run_id": "sc-01152-I2",
+   "true_variant": "I2",
+   "pred_first_error": "handover_1",
+   "pred_variant": "I1",
+   "confidence": 0.5,
+   "valid": true,
+   "wall_s": 13.302,
+   "reason": "evidence_agent collected metrics, logs, and alerts for the incident, resulting in an evidence bundle with a high confidence level. The evidence bundle was passed to the reasoning agent, which decided on the root cause and passed the diagnosis to the action agent. The action agent chose a remediation action and its target service. The handover states for handover_1 and handover_2 were not logged."
+  },
+  {
+   "run_id": "sc-01139-I3",
+   "true_variant": "I3",
+   "pred_first_error": "handover_1",
+   "pred_variant": "I2",
+   "confidence": 0.5,
+   "valid": true,
+   "wall_s": 13.406,
+   "reason": "evidence_agent: collected facts with monitoring tools and wrote the evidence bundle. handover_1: passed the evidence bundle from the evidence agent to the reasoning agent. reasoning_agent: read the bundle and decided the root cause. handover_2: passed the diagnosis from the reasoning agent to the action agent. action_agent: chose the remediation action and its target service. run: provided the final answer with the root cause, action, and target service."
+  },
+  {
+   "run_id": "sc-01135-I3",
+   "true_variant": "I3",
+   "pred_first_error": "handover_2",
+   "pred_variant": "I3",
+   "confidence": 0.8,
+   "valid": true,
+   "wall_s": 12.355,
+   "reason": "evidence_agent collected incident details and metrics, including a critical alert on api-gateway and error rates for auth and checkout services. handover_1 passed this evidence to reasoning_agent. handover_2 passed the diagnosis from reasoning_agent to action_agent. action_agent chose rollback_deploy for auth service based on the diagnosis of a bad deploy."
+  }
+ ]
+}

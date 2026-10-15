@@ -1,0 +1,195 @@
+{
+ "n": 16,
+ "first_error_acc": 0.4375,
+ "root_cause_acc": 0.1875,
+ "label_distribution": {
+  "I2": 4,
+  "E1": 4,
+  "E2": 2,
+  "I1": 2,
+  "I3": 1,
+  "E3": 1,
+  "R1": 1,
+  "R2": 1
+ },
+ "top_label": "I2",
+ "top_share": 0.25,
+ "valid": 16,
+ "degenerate": true,
+ "per_variant_correct": {
+  "E1": 0,
+  "E2": 0,
+  "E3": 0,
+  "R1": 1,
+  "R2": 1,
+  "I1": 1,
+  "I2": 0,
+  "I3": 0
+ },
+ "mean_s": 43.3510625,
+ "tokens_max": 3871,
+ "version": "v3",
+ "model": "qwen2.5:7b",
+ "predictions": [
+  {
+   "run_id": "sc-01172-E1",
+   "true_variant": "E1",
+   "pred_first_error": "handover_2",
+   "pred_variant": "I3",
+   "confidence": 0.8,
+   "valid": true,
+   "wall_s": 43.545,
+   "reason": "evidence_agent: incident_id, affected_service, time_window, and findings are correctly provided; no inconsistencies.\nhandover_1: evidence bundle passed with correct fields; no inconsistencies.\nreasoning_agent: received evidence bundle with correct fields; no inconsistencies.\nhandover_2: diagnosis passed with correct fields; no inconsistencies.\naction_agent: received correct diagnosis and chose appropriate action; no inconsistencies.\nfirst_error_step: handover_1; evidence bundle passed with correct fields, but diagnosis passed with missing suspected_service field.\nroot_cause_variant: I3; handover_2 removed suspected_service from the diagnosis.\nconfidence: 0.8"
+  },
+  {
+   "run_id": "sc-01186-E1",
+   "true_variant": "E1",
+   "pred_first_error": "handover_1",
+   "pred_variant": "I2",
+   "confidence": 0.9,
+   "valid": true,
+   "wall_s": 54.217,
+   "reason": "urls in the evidence bundle: \n- input: {'time_window': ['2025-03-10T09:16:00Z', '2025-03-10T09:41:00Z']}\n- output: {'time_window': ['2025-03-10T09:16:00Z', '2025-03-10T09:41:00Z']}\n\nfindings in the evidence bundle: \n- input: [{'id': 'f1', 'source': 'get_alerts', 'value': 'HighLatencyP95'}, {'id': 'f2', 'source': 'get_logs', 'value': 'ERROR: cal ... 09:33:10Z'}, {'id': 'f3', 'source': 'get_logs', 'value': 'ERROR: tls ... 09:32:30Z'}, {'id': 'f4', 'source': 'get_metrics', 'value': 'api-gatewa ... 09:36:00Z'}, {'id': 'f5', 'source': 'get_metrics', 'value': 'catalog la ... 09:36:00Z'}, {'id': 'f6', 'source': 'get_logs', 'value': 'ERROR: cal ... 09:33:10Z'}, {'id': 'f7', 'source': 'get_metrics', 'value': 'catalog er ... 09:36:00Z'}]\n- output: [{'id': 'f2', 'source': 'get_logs', 'value': 'ERROR: cal ... 09:33:10Z'}, {'id': 'f3', 'source': 'get_logs', 'value': 'ERROR: tls ... 09:32:30Z'}, {'id': 'f1', 'source': 'get_alerts', 'value': 'HighLatencyP95'}]\n\naffected_service: \n- input: 'api-gateway'\n- output: 'api-gateway'\n\naffected_service in the reasoning summary: \n- input: 'api-gateway'\n- output: 'api-gateway'\n\naffected_service in the action summary: \n- input: 'api-gateway'\n- output: 'api-g"
+  },
+  {
+   "run_id": "sc-01150-E2",
+   "true_variant": "E2",
+   "pred_first_error": "evidence_agent",
+   "pred_variant": "E1",
+   "confidence": 0.9,
+   "valid": true,
+   "wall_s": 39.328,
+   "reason": "urls in the evidence bundle: \n- Input: time_window=['2025-03-10T09:17:00Z', '2025-03-10T09:42:00Z']\n- Output: time_window=['2025-03-10T09:17:00Z', '2025-03-10T09:42:00Z']\n\nfindings in the evidence bundle: \n- Input: 10 findings\n- Output: 10 findings\n\nfindings in the reasoning summary: \n- Input: findings used: ['f2', 'f3', 'f4', 'f5', 'f6', 'f7', 'f8', 'f9', 'f10']\n- Output: findings used: ['f2', 'f3', 'f4', 'f5', 'f6', 'f7', 'f8', 'f9', 'f10']\n\nfindings in the action summary: \n- Input: findings used: ['f2', 'f3', 'f4', 'f5', 'f6', 'f7', 'f8', 'f9', 'f10']\n- Output: findings used: ['f2', 'f3', 'f4', 'f5', 'f6', 'f7', 'f8', 'f9', 'f10']"
+  },
+  {
+   "run_id": "sc-01110-E2",
+   "true_variant": "E2",
+   "pred_first_error": "evidence_agent",
+   "pred_variant": "E1",
+   "confidence": 1.0,
+   "valid": true,
+   "wall_s": 19.615,
+   "reason": "urls and times shortened for brevity"
+  },
+  {
+   "run_id": "sc-01192-E3",
+   "true_variant": "E3",
+   "pred_first_error": "evidence_agent",
+   "pred_variant": "E1",
+   "confidence": 1.0,
+   "valid": true,
+   "wall_s": 22.741,
+   "reason": "urls in C1 and C2 are consistent, no missing or extra fields; C3 prompt is consistent with C1 and C2; C4 and C5 timings are consistent; C6 handover states are consistent"
+  },
+  {
+   "run_id": "sc-01176-E3",
+   "true_variant": "E3",
+   "pred_first_error": "handover_1",
+   "pred_variant": "I2",
+   "confidence": 0.9,
+   "valid": true,
+   "wall_s": 46.729,
+   "reason": "urls in C1: evidence_agent: \n- Input: time_window: ['2025-03-10T09:13:00Z', '2025-03-10T09:38:00Z']\n- Output: time_window: ['2025-03-10T09:13:00Z', '2025-03-10T09:38:00Z']\n- Consistency: No change in time window\n\n- Input: affected_service: 'api-gateway'\n- Output: affected_service: 'api-gateway'\n- Consistency: No change in affected_service\n\n- Input: findings: [f1, f2, f3, f4, f5, f6, f7]\n- Output: findings: [f1, f2, f3, f4, f5, f6, f7]\n- Consistency: No change in findings\n\n- Input: evidence_confidence: 0.8\n- Output: evidence_confidence: 0.8\n- Consistency: No change in evidence_confidence\n\nhandover_1: \n- Input: evidence_bundle: {affected_service: 'api-gateway', time_window: ['2025-03-10T09:13:00Z', '2025-03-10T09:38:00Z'], findings: [f1, f2, f3, f4, f5, f6, f7], evidence_confidence: 0.8}\n- Output: diagnosis: {root_cause: 'bad_deploy', suspected_service: 'auth', reasoning_summary: 'The incident started with high latency alerts on api-gateway, ... patterns.', confidence: 0.7, evidence_used: [f1, f2, f3, f4, f5, f6, f7]}\n- Consistency: affected_service is missing in the output\n\n- Input: diagnosis: {root_cause: 'bad_deploy', suspected_service: 'auth', reasoning_summary: 'The incident ..."
+  },
+  {
+   "run_id": "sc-01170-R1",
+   "true_variant": "R1",
+   "pred_first_error": "evidence_agent",
+   "pred_variant": "E3",
+   "confidence": 1.0,
+   "valid": true,
+   "wall_s": 24.602,
+   "reason": "urls in C1 and C2 are consistent, no missing fields or altered data; C2 output includes all findings from C1, no findings dropped; C3 prompts and outputs are consistent, no biasing notes; C4 confidence levels are consistent, no unexpected changes; C5 timings are consistent, no delays or speedups; C6 handover states are consistent, no dropped fields or altered data"
+  },
+  {
+   "run_id": "sc-01103-R1",
+   "true_variant": "R1",
+   "pred_first_error": "reasoning_agent",
+   "pred_variant": "R1",
+   "confidence": 0.8,
+   "valid": true,
+   "wall_s": 45.905,
+   "reason": "urls shortened for brevity\n\n- evidence_agent: collected facts with the monitoring tools and wrote the evidence bundle\n  - input: incident_id: INC-01103, reported_at: 2025-03-10T09:41:00Z, symptom_service: checkout, summary: Warning alert HighErrorRate fired on checkout at 2025-03-10T09:41:00Z; customers are affected and the cause and  ... 10 findings (most important first, facts only, no repeats), the service where the problem originates, and your confidence in the evidence (0 to 1).\n  - output: incident_id: INC-01103, affected_service: checkout, time_window: [2025-03-10T09:21:00Z, 2025-03-10T09:46:00Z], findings: [f1, f2, f3, f4, f5, f6, f7], evidence_confidence: 0.8\n- handover_1: passed the evidence bundle from the evidence agent to the reasoning agent\n  - input: incident_id: INC-01103, affected_service: checkout, time_window: [2025-03-10T09:21:00Z, 2025-03-10T09:46:00Z], findings: [f1, f2, f3, f4, f5, f6, f7], evidence_confidence: 0.8\n  - output: incident_id: INC-01103, affected_service: checkout, time_window: [2025-03-10T09:21:00Z, 2025-03-10T09:46:00Z], findings: [f1, f2, f3, f4, f5, f6, f7], evidence_confidence: 0.8\n- reasoning_agent: read the bundle and decided the root_caus"
+  },
+  {
+   "run_id": "sc-01186-R2",
+   "true_variant": "R2",
+   "pred_first_error": "evidence_agent",
+   "pred_variant": "E2",
+   "confidence": 0.9,
+   "valid": true,
+   "wall_s": 47.071,
+   "reason": "urls shortened for brevity\n\n- evidence_agent: \n  - input: {incident_id: INC-01186, reported_at: 2025-03-10T09:36:00Z, symptom_service: api-gateway, summary: Critical alert HighLatencyP95 fired on api-gateway at 2025-03-10T09:36:00Z; customers are affected and the cause ... 10 findings (most important first, facts only, no repeats), the service where the problem originates, and your confidence in the evidence (0 to 1).}\n  - output: {incident_id: INC-01186, affected_service: api-gateway, time_window: [2025-03-10T09:16:00Z, 2025-03-10T09:41:00Z], findings: [f1, f2, f3, f4, f5], evidence_confidence: 0.95}\n  - what looks inconsistent: The input summary mentions HighLatencyP95, but the output findings include f2 (HighLatencyP95) and f4 (ERROR message), which are consistent.\n- handover_1: \n  - input: {incident_id: INC-01186, affected_service: api-gateway, time_window: [2025-03-10T09:16:00Z, 2025-03-10T09:41:00Z], findings: [f1, f2, f3, f4, f5], evidence_confidence: 0.95}\n  - output: {incident_id: INC-01186, affected_service: api-gateway, time_window: [2025-03-10T09:16:00Z, 2025-03-10T09:41:00Z], findings: [f1, f2, f3, f4, f5], evidence_confidence: 0.95}\n  - what looks inconsistent: The 'e"
+  },
+  {
+   "run_id": "sc-01171-R2",
+   "true_variant": "R2",
+   "pred_first_error": "reasoning_agent",
+   "pred_variant": "R2",
+   "confidence": 0.85,
+   "valid": true,
+   "wall_s": 81.923,
+   "reason": "evidence_agent: collected facts with the monitoring tools and wrote the evidence bundle\n  - input: incident_id: INC-01171, reported_at: 2025-03-10T09:38:00Z, symptom_service: api-gateway, summary: Critical alert HighLatencyP95 fired on api-gateway at 2025-03-10T09:38:00Z; customers are affected and the cause is unknown, time_window: [2025-03-10T09:18:00Z, 2025-03-10T09:43:00Z]\n  - output: incident_id: INC-01171, affected_service: api-gateway, time_window: [2025-03-10T09:18:00Z, 2025-03-10T09:43:00Z], findings: [f1-f10], evidence_confidence: 0.8\nhandover_1: passed the evidence bundle from the evidence agent to the reasoning agent\n  - input: incident_id: INC-01171, affected_service: api-gateway, time_window: [2025-03-10T09:18:00Z, 2025-03-10T09:43:00Z], findings: [f1-f10]\n  - output: incident_id: INC-01171, affected_service: api-gateway, time_window: [2025-03-10T09:18:00Z, 2025-03-10T09:43:00Z], findings: [f1-f10]\nreasoning_agent: read the bundle and decided the root cause\n  - input: incident_id: INC-01171, affected_service: api-gateway, time_window: [2025-03-10T09:18:00Z, 2025-03-10T09:43:00Z], findings: [f1-f10]\n  - output: root_cause: memory_leak, suspected_service: auth, reason: "
+  },
+  {
+   "run_id": "sc-01174-I1",
+   "true_variant": "I1",
+   "pred_first_error": "handover_1",
+   "pred_variant": "I1",
+   "confidence": 1.0,
+   "valid": true,
+   "wall_s": 55.814,
+   "reason": "urls shortened for brevity\n\n- evidence_agent: \n  - what went in: incident_id: INC-01174, reported_at: 2025-03-10T09:39:00Z, symptom_service: api-gateway, summary: Critical alert H ... e still unknown., time_window: [2025-03-10T09:19:00Z, 2025-03-10T09:44:00Z]\n  - what came out: incident_id: INC-01174, affected_service: auth, time_window: [2025-03-10T09:19:00Z, 2025-03-10T09:44:00Z], findings: [f1, f2, f3], evidence_confidence: 1.0\n  - anything inconsistent: affected_service was not in the input\n- handover_1: \n  - what went in: incident_id: INC-01174, affected_service: auth, time_window: [2025-03-10T09:19:00Z, 2025-03-10T09:44:00Z], findings: [f1, f2, f3], evidence_confidence: 1.0\n  - what came out: incident_id: INC-01174, time_window: [2025-03-10T09:19:00Z, 2025-03-10T09:44:00Z], findings: [f1, f2, f3], evidence_confidence: 1.0\n  - anything inconsistent: affected_service was removed\n- reasoning_agent: \n  - what went in: incident_id: INC-01174, time_window: [2025-03-10T09:19:00Z, 2025-03-10T09:44:00Z], findings: [f1, f2, f3], evidence_confidence: 1.0\n  - what came out: root_cause: expired_certificate, suspected_service: payment-db, reasoning_summary: The tls handshake failures and c"
+  },
+  {
+   "run_id": "sc-01186-I1",
+   "true_variant": "I1",
+   "pred_first_error": "evidence_agent",
+   "pred_variant": "E2",
+   "confidence": 0.95,
+   "valid": true,
+   "wall_s": 48.891,
+   "reason": "urls shortened for brevity\n1. evidence_agent: {'input': {'incident_id': 'INC-01186', 'reported_at': '2025-03-10T09:36:00Z', 'symptom_service': 'api-gateway', 'summary': 'Critical alert HighLatencyP95 fired on api-gateway at 2025-03-10T09:36:00Z; customers are affected and the cause ...', 'time_window': ['2025-03-10T09:16:00Z', '2025-03-10T09:41:00Z']}, 'output': {'incident_id': 'INC-01186', 'affected_service': 'api-gateway', 'time_window': ['2025-03-10T09:16:00Z', '2025-03-10T09:41:00Z'], 'findings': [{'id': 'f1', 'source': 'get_alerts', 'value': 'HighLatencyP95'}, {'id': 'f2', 'source': 'get_logs', 'value': 'ERROR mess ...'}, {'id': 'f3', 'source': 'get_metrics', 'value': 'api-gateway'}, {'id': 'f4', 'source': 'get_logs', 'value': 'ERROR mess ...'}, {'id': 'f5', 'source': 'get_metrics', 'value': 'catalog lag'}], 'evidence_confidence': 0.95}, 'attempts': [{'attempt': 1, 'valid': true, 'error': null}]}\n2. reasoning_agent: {'input': {'incident_id': 'INC-01186', 'time_window': ['2025-03-10T09:16:00Z', '2025-03-10T09:41:00Z'], 'findings': [{'id': 'f1', 'source': 'get_alerts', 'value': 'HighLatencyP95'}, {'id': 'f2', 'source': 'get_logs', 'value': 'ERROR mess ...'}, {'id': 'f3', 'source"
+  },
+  {
+   "run_id": "sc-01112-I2",
+   "true_variant": "I2",
+   "pred_first_error": "evidence_agent",
+   "pred_variant": "E1",
+   "confidence": 1.0,
+   "valid": true,
+   "wall_s": 21.868,
+   "reason": "urls in C1 and C2 are consistent, no missing or extra fields; C3 prompt is consistent with C1 and C2; C4 and C5 timings are consistent; C6 handover states are consistent"
+  },
+  {
+   "run_id": "sc-01152-I2",
+   "true_variant": "I2",
+   "pred_first_error": "handover_1",
+   "pred_variant": "I1",
+   "confidence": 0.9,
+   "valid": true,
+   "wall_s": 47.251,
+   "reason": "urls in C1 are consistent with the log, no obvious inconsistencies; evidence_agent output includes 'affected_service' which is not in the input, suggesting a field was added or the input was altered; handover_1 output includes 'affected_service' which is not in the input, suggesting a field was added or the input was altered; handover_2 output includes 'suspected_service' which is not in the input, suggesting a field was added or the input was altered; action_agent input includes 'suspected_service' which is not in the input, suggesting a field was added or the input was altered"
+  },
+  {
+   "run_id": "sc-01139-I3",
+   "true_variant": "I3",
+   "pred_first_error": "handover_1",
+   "pred_variant": "I2",
+   "confidence": 0.9,
+   "valid": true,
+   "wall_s": 44.525,
+   "reason": "urls shortened for brevity\n\n- evidence_agent: collected facts with the monitoring tools and wrote the evidence bundle\n  - input: incident_id: INC-01139, reported_at: 2025-03-10T09:40:00Z, symptom_service: catalog, summary: Warning alert HighErrorRate fired on catalog at 2025-03-10T09:40:00Z; customers are affected and the cause and f ... 10 findings (most important first, facts only, no repeats), the service where the problem originates, and your confidence in the evidence (0 to 1).\n  - output: incident_id: INC-01139, affected_service: catalog, time_window: [2025-03-10T09:20:00Z, 2025-03-10T09:45:00Z], findings: [f1, f2, f3, f4, f5, f6, f7, f8], evidence_confidence: 0.8\n  - what looks inconsistent: The affected_service is catalog, which matches the symptom_service in the input.\n- handover_1: passed the evidence bundle from the evidence agent to the reasoning agent\n  - input: evidence bundle with findings [f1, f2, f3, f4, f5, f6, f7, f8]\n  - output: diagnosis with root_cause: cache_eviction_storm, reasoning_summary: The cache eviction rate has spiked, leading to increased cache misses and a high error rate on catalog, confidence: 0.9, evidence_used: [f3, f4, f5, f6, f7, f8]\n  - what"
+  },
+  {
+   "run_id": "sc-01135-I3",
+   "true_variant": "I3",
+   "pred_first_error": "handover_1",
+   "pred_variant": "I2",
+   "confidence": 0.8,
+   "valid": true,
+   "wall_s": 49.592,
+   "reason": "urls shortened for brevity\n\n- evidence_agent: collected facts with the monitoring tools and wrote the evidence bundle\n  - input: incident_id: INC-01135, reported_at: 2025-03-10T09:37:00Z, symptom_service: api-gateway, summary: Critical alert HighLatencyP95 fired on api-gateway at 2025-03-10T09:37:00Z; customers are affected and the cause is unknown, time_window: [2025-03-10T09:17:00Z, 2025-03-10T09:42:00Z]\n  - output: incident_id: INC-01135, affected_service: api-gateway, time_window: [2025-03-10T09:17:00Z, 2025-03-10T09:42:00Z], findings: [f1, f2, f3, f4, f5, f6, f7], evidence_confidence: 0.8\n- handover_1: passed the evidence bundle from the evidence agent to the reasoning agent\n  - input: incident_id: INC-01135, affected_service: api-gateway, time_window: [2025-03-10T09:17:00Z, 2025-03-10T09:42:00Z], findings: [f1, f2, f3, f4, f5, f6, f7], evidence_confidence: 0.8\n  - output: incident_id: INC-01135, affected_service: api-gateway, time_window: [2025-03-10T09:17:00Z, 2025-03-10T09:42:00Z], findings: [f1, f2, f3, f4, f5, f6, f7], evidence_confidence: 0.8\n- reasoning_agent: read the bundle and decided the root cause\n  - input: incident_id: INC-01135, affected_service: api-gateway,\u65f6\u95f4\u7a97"
+  }
+ ]
+}

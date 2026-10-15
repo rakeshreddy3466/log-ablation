@@ -121,9 +121,14 @@ def system_prompt(version: str = PROMPT_VERSION, order_key: str = "") -> str:
         )
     else:
         variants = _variant_lines(order_key)
+        line_rule = (
+            "one line per step, in pipeline order"
+            if version == "v2"
+            else "exactly five lines, one per step, each starting with the step name"
+        )
         task = (
             "Work in this order and output only JSON with these fields, in this order:\n"
-            "1. observations: one line per step, in pipeline order: what went in, what came "
+            f"1. observations: {line_rule}: what went in, what came "
             "out, and anything that looks inconsistent or changed between input and output.\n"
             "2. first_error_step: the earliest step at which something went wrong.\n"
             "3. root_cause_variant: choose it only among the faults whose first error is at "
@@ -143,8 +148,16 @@ def system_prompt(version: str = PROMPT_VERSION, order_key: str = "") -> str:
     )
 
 
-def user_prompt(events: list[dict[str, Any]]) -> str:
-    return "Log of the run:\n\n" + render_trace(events) + "\n\nWhich fault was injected, and where?"
+def user_prompt(events: list[dict[str, Any]], version: str = PROMPT_VERSION) -> str:
+    tail = "\n\nWhich fault was injected, and where?"
+    if version not in ("v1", "v2"):
+        # v3: restate the working order after the log, where a long prompt keeps it fresh
+        tail += (
+            " Write observations for each step first (what went in, what came out, what "
+            "looks inconsistent), then the earliest step with a problem, then the fault "
+            "possible at that step."
+        )
+    return "Log of the run:\n\n" + render_trace(events) + tail
 
 
 def judge_events(
@@ -165,7 +178,7 @@ def judge_events(
         llm,
         model_cls,
         system_prompt(version, order_key),
-        user_prompt(events),
+        user_prompt(events, version),
         temperature=0.0,
         seed=JUDGE_SEED,
     )
