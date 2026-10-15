@@ -12,6 +12,7 @@ names the fault. first_error_step then follows from the variant (taxonomy.FIRST_
 
 from __future__ import annotations
 
+import hashlib
 from collections.abc import Callable
 from typing import Any
 
@@ -119,9 +120,17 @@ def rule_e3(events: Events) -> bool:
 # ---- reasoning rules (C3, with a C4 fallback for R2) -----------------------------------------
 
 
+REASONING_SYSTEM_SHA256 = hashlib.sha256(REASONING_SYSTEM.encode()).hexdigest()
+
+
 def rule_r1(events: Events) -> bool:
-    """The reasoning system prompt differs from the frozen v1 template."""
+    """The reasoning system prompt differs from the frozen v1 template (full text, or, in the
+    light C3 form, its sha256 against the known v1 template hash)."""
     for e in _of(events, "prompt_shown", "reasoning_agent"):
+        if "system_sha256" in e["payload"]:
+            if e["payload"]["system_sha256"] != REASONING_SYSTEM_SHA256:
+                return True
+            continue
         msgs = e["payload"].get("messages") or []
         sys_msgs = [m["content"] for m in msgs if m.get("role") == "system"]
         if sys_msgs and sys_msgs[0] != REASONING_SYSTEM:

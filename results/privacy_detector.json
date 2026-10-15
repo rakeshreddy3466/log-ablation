@@ -1,0 +1,43 @@
+{
+ "EMAIL_ADDRESS": {
+  "planted": 1699,
+  "found": 0,
+  "detected": 0,
+  "false": 0,
+  "recall": 0.0,
+  "precision": null
+ },
+ "IP_ADDRESS": {
+  "planted": 3112,
+  "found": 3112,
+  "detected": 3095,
+  "false": 0,
+  "recall": 1.0,
+  "precision": 1.0
+ },
+ "API_KEY": {
+  "planted": 975,
+  "found": 975,
+  "detected": 970,
+  "false": 0,
+  "recall": 1.0,
+  "precision": 1.0
+ },
+ "ORDER_ID": {
+  "planted": 1782,
+  "found": 1782,
+  "detected": 1766,
+  "false": 0,
+  "recall": 1.0,
+  "precision": 1.0
+ },
+ "ALL": {
+  "planted": 7568,
+  "found": 5869,
+  "detected": 5831,
+  "false": 0,
+  "recall": 0.7755021141649049,
+  "precision": 1.0
+ },
+ "_note": "Presidio (stock e-mail recognizer + custom API_KEY and ORDER_ID patterns) against the planted values, counted over every string leaf of every event of all 375 runs."
+}

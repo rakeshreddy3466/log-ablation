@@ -111,12 +111,20 @@ The outcome check is never traced (a verdict is a label, not log content).
 
 ## Cost and privacy
 - Size: bytes per run per category, raw and gzip; median and p95.
-- Latency: 30 clean scenarios with logging off, all on, and one category on at a time. Cold cache
-  (unload the model between runs) and randomised run order, because Ollama reuses its prompt cache
-  for identical prompts (seen in the pilot) and would otherwise make later conditions look faster.
+- Write overhead (replaces the planned model-based latency study): replay the recorded events of
+  all 375 runs through the tracer's write path, once per category on its own, and time
+  serialisation plus file write. Report per-run median and p95 per category and as a % of the
+  median run time. Reason: millisecond logging costs are invisible next to seconds of model-time
+  variance (a 3B model call takes seconds and varies by more than the whole logging cost), so a
+  model-based latency study could not resolve them; it would only measure noise and Ollama's
+  prompt cache.
 - Sensitive exposure: Microsoft Presidio (+ custom recognizers for API keys and order IDs); report % of
   events and entities per run, and Presidio recall against the planted ground truth.
-- Redaction test: C2 and C3 also scored in masked form.
+- Redaction test: C2 and C3 also scored in masked form; C3 also in a light form (template id,
+  sha256 of the system prompt, options).
+- Presidio's stock e-mail recognizer rejects the reserved ".test" domain the generator plants (it
+  validates the top-level domain), so stock recall on e-mails is reported as measured and the
+  masked variants are also built with one extra pattern for ".test" ("masked_x").
 
 ## Minimum profile
 70/30 design/holdout split by scenario seed, stratified by variant. Rule-based scores all 64 profiles;
@@ -126,7 +134,9 @@ opening the holdout. Then score full, profile and skeleton on the holdout. Repor
 
 ## Hardware and models (MacBook Pro M2, 8 GB)
 - Agents: qwen2.5:3b via Ollama. Judge: qwen2.5:7b, run alone after agents finish;
-  fallback judge phi4-mini only. Installed models: qwen2.5:3b, qwen2.5:7b, phi4-mini.
+  fallback judge phi4-mini only. FINDING (results/judge_dev_log.md): on the design-side dev set
+  the LLM judge stayed at chance for root cause after three prompt versions, so the rule checker
+  is the attribution method; the judge is reported as a negative result. Installed models: qwen2.5:3b, qwen2.5:7b, phi4-mini.
 - Measured on this Mac: qwen2.5:3b = 2.5 GB, 100% GPU, about 39 tokens/s generation at num_ctx 8192.
 - ALWAYS pass options={"num_ctx": 8192} (judge may use up to 8192, never more) on every Ollama request.
   Never rely on the global default: a 131072 context once made a 3B model take 23 GB and hang the Mac.

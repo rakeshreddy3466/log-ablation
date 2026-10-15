@@ -1,0 +1,42 @@
+{
+ "frozen": "2026-10-16",
+ "selected_on": "design side only; the holdout has not been read",
+ "rule": "smallest median trace bytes with first-error and root-cause accuracy both within 5 points of full (manifested runs); tie-break fewer planted sensitive values",
+ "n_candidates": 320,
+ "profile": "C2x+C3l+C6",
+ "categories": {
+  "C2": "masked_x",
+  "C3": "light",
+  "C6": "raw"
+ },
+ "design_manifested": {
+  "first_error_acc": 0.9242424242424242,
+  "root_cause_acc": 0.9242424242424242,
+  "full_first_error_acc": 0.9242424242424242,
+  "full_root_cause_acc": 0.9242424242424242,
+  "first_error_drop": 0.0,
+  "first_error_drop_ci": [
+   0.0,
+   0.0
+  ],
+  "root_cause_drop": 0.0,
+  "root_cause_drop_ci": [
+   0.0,
+   0.0
+  ]
+ },
+ "design_masked": {
+  "first_error_acc": 0.9166666666666666,
+  "root_cause_acc": 0.9166666666666666
+ },
+ "median_bytes_per_run": 18343.0,
+ "median_gzip_bytes_per_run": 3860.0,
+ "full_median_bytes_per_run": 46879.0,
+ "bytes_share_of_full": 0.3912839437701316,
+ "planted_values_per_run": 1.7303370786516854,
+ "full_planted_values_per_run": 19.39700374531835,
+ "skeleton_accuracy": {
+  "first_error": 0.0,
+  "root_cause": 0.0
+ }
+}
