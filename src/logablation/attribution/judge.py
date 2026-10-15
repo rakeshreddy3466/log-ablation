@@ -98,20 +98,25 @@ def judge_events(llm: LLMClient, events: list[dict[str, Any]]) -> dict[str, Any]
         llm, JudgeVerdict, system_prompt(), user_prompt(events), temperature=0.0, seed=JUDGE_SEED
     )
     wall = time.perf_counter() - t0
-    v: JudgeVerdict | None = res.parsed
+    # a prompt that filled num_ctx was cut by the server: never scored as a verdict
+    ctx_full = any(
+        a.reply is not None and a.reply.timings.get("prompt_eval_count", 0) >= NUM_CTX
+        for a in res.attempts
+    )
+    v: JudgeVerdict | None = None if ctx_full else res.parsed
     tm = res.timings
     return {
-        "valid": res.ok,
+        "valid": v is not None,
         "pred_first_error": v.first_error_step if v else "invalid",
         "pred_variant": v.root_cause_variant if v else "invalid",
         "reason": v.reason if v else "",
         "confidence": v.confidence if v else None,
         "attempts": len(res.attempts),
-        "error": res.error,
+        "error": "context_full" if ctx_full else res.error,
         "wall_s": round(wall, 3),
         "prompt_tokens": tm.get("prompt_eval_count"),
         "output_tokens": tm.get("eval_count"),
-        "context_full": any(a.context_full for a in res.attempts),
+        "context_full": ctx_full,
     }
 
 
@@ -160,6 +165,8 @@ def timing_pilot(n: int = 5) -> None:
             f"ctx_full={out['context_full']} foreign={foreign}"
         )
     client.unload()
+    tk = [r[1]["prompt_tokens"] or 0 for r in rows]
+    print(f"prompt tokens min/median/max {min(tk)}/{statistics.median(tk)}/{max(tk)}")
     mean = statistics.fmean(secs)
     n_runs = len(runs)
     n_cond = len(conditions())
@@ -169,6 +176,40 @@ def timing_pilot(n: int = 5) -> None:
         f"projection {n_runs} runs x {n_cond} conditions = {n_runs * n_cond} calls "
         f"~ {proj:.1f} h"
     )
+
+
+def sanity_check(n: int = 10) -> None:
+    """Judge vs rule checker on n design-side manifested runs, full logging. No prompt tuning."""
+    from .rules import attribute
+
+    client = switch_to_judge()
+    runs = sorted(select_runs(("manifested",)), key=lambda r: r["meta"]["run_id"])
+    sample = random.Random(JUDGE_SEED).sample(runs, n)
+    j_fe = j_rc = r_fe = r_rc = 0
+    secs, toks = [], []
+    for r in sample:
+        m = r["meta"]
+        out = judge_events(client, r["events"])
+        rule = attribute(r["events"])
+        j_fe += out["pred_first_error"] == FIRST_ERROR_STEP[m["variant"]]
+        j_rc += out["pred_variant"] == m["variant"]
+        r_fe += rule["first_error_step"] == FIRST_ERROR_STEP[m["variant"]]
+        r_rc += rule["root_cause_variant"] == m["variant"]
+        secs.append(out["wall_s"])
+        toks.append(out["prompt_tokens"] or 0)
+        print(
+            f"{m['variant']}: judge {out['pred_variant']}/{out['pred_first_error']} "
+            f"rules {rule['root_cause_variant']} {out['wall_s']:.1f}s tok={out['prompt_tokens']} "
+            f"valid={out['valid']} foreign={guard.check_after_run(JUDGE_MODEL)}"
+        )
+    client.unload()
+    mean = statistics.fmean(secs)
+    print(f"judge first-error {j_fe}/{n}  root-cause {j_rc}/{n}  (chance 1/8 root cause)")
+    print(f"rules first-error {r_fe}/{n}  root-cause {r_rc}/{n}")
+    print(f"tokens min/median/max {min(toks)}/{statistics.median(toks)}/{max(toks)}")
+    nc = len(conditions())
+    proj = mean * len(runs) * nc / 3600
+    print(f"mean {mean:.1f}s/call; projection {len(runs)}x{nc} calls ~ {proj:.1f} h")
 
 
 def _done_keys() -> set[tuple[str, str]]:
@@ -234,12 +275,15 @@ def run_all(groups: tuple[str, ...], limit: int | None = None) -> None:
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--timing-pilot", action="store_true")
+    ap.add_argument("--sanity", type=int, default=0, help="judge vs rules on N design runs")
     ap.add_argument("--run", action="store_true")
     ap.add_argument("--groups", default="manifested", help="comma list: manifested,masked")
     ap.add_argument("--limit", type=int, default=None)
     a = ap.parse_args()
     if a.timing_pilot:
         timing_pilot()
+    elif a.sanity:
+        sanity_check(a.sanity)
     elif a.run:
         run_all(tuple(a.groups.split(",")), a.limit)
     else:

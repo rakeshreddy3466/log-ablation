@@ -1,6 +1,6 @@
 """Render a (filtered) trace as text for the LLM judge, with a fixed budget per category.
 
-Every category gets its own character budget (tokens x 4) and is rendered from its own events
+Every category gets its own character budget (tokens x 3) and is rendered from its own events
 only, so removing one category never gives the others more room and never changes how they look.
 A removed category renders as an explicit "not logged" line. Nothing is hand-picked per category:
 events are compact JSON, long strings keep their head and tail (text appended to the end of a
@@ -16,15 +16,16 @@ from typing import Any
 
 from ..tracing.categories import CATEGORY_IDS, SKELETON
 
-CHARS_PER_TOKEN = 4
+CHARS_PER_TOKEN = 3  # JSON runs about 3 characters per token
+# the original budgets (300/900/1500/1200/300/400/700) scaled by the same 0.75, proportions kept
 BUDGET_TOKENS: dict[str, int] = {
-    SKELETON: 300,
-    "step_io": 900,
-    "tool_calls": 1500,
-    "prompt_shown": 1200,
-    "confidence": 300,
-    "timings": 400,
-    "handover_state": 700,
+    SKELETON: 225,
+    "step_io": 675,
+    "tool_calls": 1125,
+    "prompt_shown": 900,
+    "confidence": 225,
+    "timings": 300,
+    "handover_state": 525,
 }
 ORDER: tuple[str, ...] = (SKELETON, *CATEGORY_IDS.values())
 START_CAP = 600  # longest string kept at first

@@ -115,3 +115,29 @@ def test_conditions_are_full_minus_each_and_skeleton() -> None:
     cs = judge.conditions()
     assert [n for n, _ in cs] == ["full", "-C1", "-C2", "-C3", "-C4", "-C5", "-C6", "skeleton"]
     assert len(cs[0][1]) == 6 and all(len(k) == 5 for _, k in cs[1:7]) and cs[7][1] == ()
+
+
+def test_instructions_and_taxonomy_come_first_and_are_never_shortened() -> None:
+    small, huge = make_events(2, 10), make_events(80, 20000)
+    for evs in (small, huge):
+        llm = FakeLLM([GOOD])
+        judge.judge_events(llm, evs)
+        system, user = llm.prompts[0]
+        assert system == judge.system_prompt()  # identical whatever the trace looks like
+        assert user.startswith("Log of the run:")  # trace after, never before, the instructions
+        for s in judge.STEPS:
+            assert f"- {s}: {judge.STEP_TEXT[s]}" in system
+        for v in judge.VARIANTS:
+            assert judge.VARIANT_TEXT[v] in system
+
+
+def test_prompt_that_fills_the_context_is_invalid_never_scored() -> None:
+    class Full(FakeLLM):
+        def chat(self, system: str, user: str, schema: dict[str, Any], **kw: Any) -> LLMReply:
+            r = super().chat(system, user, schema, **kw)
+            r.timings["prompt_eval_count"] = 8192
+            return r
+
+    out = judge.judge_events(Full([GOOD]), make_events(2, 10))
+    assert not out["valid"] and out["context_full"] and out["pred_variant"] == "invalid"
+    assert out["error"] == "context_full"
