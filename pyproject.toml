@@ -5,6 +5,7 @@ description = "Which log line would have told me? A logging ablation on a three-
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "langgraph>=1.2.15",
     "pydantic>=2.7",
     "pyyaml>=6.0",
 ]

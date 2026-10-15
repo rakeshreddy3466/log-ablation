@@ -9,6 +9,7 @@ run_mix:                 # 300 runs = 60 clean + 30 per variant; adjust after th
   per_variant: 30
   variants: [E1, E2, E3, R1, R2, I1, I2, I3]
   pilot_runs: 20
+  first_seed: 1100       # clean phase takes the lowest seeds >= this, balanced over incident types
 
 models:
   agent: qwen2.5:3b

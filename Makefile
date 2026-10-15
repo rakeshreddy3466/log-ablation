@@ -4,7 +4,7 @@ scenarios:
 	uv run python -m logablation.scenarios --config configs/experiment.yaml
 
 run:
-	@echo "run: not implemented yet (milestone: pipeline + runs)"
+	uv run python -m logablation.pipeline --config configs/experiment.yaml
 
 attribute:
 	@echo "attribute: not implemented yet (milestone: rule-based checker + LLM judge)"

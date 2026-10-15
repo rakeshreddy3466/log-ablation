@@ -59,13 +59,17 @@ Paired design (counterfactual twins):
 - Temperature is 0 and the seed is fixed, so the twin is the counterfactual: same scenario, same
   model, same prompts, only the fault differs. Therefore manifested = faulted run fails while its
   twin succeeded (the fault caused the failure); masked = faulted run still succeeds.
-- Exception R2 (unstable_sampling): it changes sampling on purpose, so the faulted run is one
-  stochastic draw, not a deterministic counterfactual. Its sampling seed is stored; R2 results are
-  labelled manifested/masked by the same rule but reported separately and read as a rate, not a cause.
+- R2 (unstable_sampling) is labelled and counted like every other variant: its twin at temperature 0
+  succeeded, so a failure under high temperature is caused by the fault (first_error_step =
+  reasoning_agent). Only note that R2's masking rate comes from single random draws.
+- One eligible scenario can host several fault variants; all of them share the same clean twin.
 - Eligibility per incident type (clean successes / clean runs) is reported as a result
   (results/eligibility.csv, shown in T1), because it limits how many faulted runs each type can supply.
-Run mix target: 60 clean runs and 30 faulted runs per variant, drawn from eligible scenarios; if a
-type has too few eligible scenarios, run fewer and report the shortfall. Adjust after a 20-run pilot.
+Run mix target: about 60 clean runs (one per scenario), then about 240 faulted runs spread over the
+eligible scenarios with balanced variants (about 30 per variant). If a type has too few eligible
+scenarios, run fewer and report the shortfall. Adjust after a 20-run pilot.
+Because runs are grouped by scenario, every confidence interval resamples whole scenarios (cluster
+bootstrap), and the design/holdout split is by scenario (all runs of a scenario on the same side).
 
 ## Logging
 Log everything in every run; ablate afterwards by filtering. Each event is one JSON line:
@@ -85,7 +89,7 @@ Log everything in every run; ablate afterwards by filtering. Each event is one J
   {first_error_step, root_cause_variant, reason, confidence}.
 - Conditions: full; full minus C1..C6 (six); skeleton only. Add-one pass for rule-based only.
 - Metrics: first-error accuracy (5 classes), root-cause accuracy (8 classes), macro-F1, per-class P/R,
-  confusion matrices, accuracy drop vs full with 95% paired bootstrap CI (2,000 resamples).
+  confusion matrices, accuracy drop vs full with 95% paired cluster-bootstrap CI (2,000 resamples of whole scenarios).
   A drop whose CI crosses zero is reported as "no measurable value".
 
 ## Cost and privacy
