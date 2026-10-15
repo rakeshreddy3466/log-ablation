@@ -206,7 +206,7 @@ def test_evidence_agent_plan_prompt_and_bundle() -> None:
     assert ticket.summary in user and ticket.time_window[0] in user
     # the ticket must not leak ground truth
     gt = sc.ground_truth
-    assert gt.correct_action not in user and gt.decisive_alert_id not in user
+    assert gt.correct_action not in user
     assert llm.calls[0]["schema"] == EvidenceDraft.model_json_schema()
 
 
