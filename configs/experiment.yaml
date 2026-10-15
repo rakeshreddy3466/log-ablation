@@ -1,0 +1,27 @@
+# Single source of truth for seeds, run mix, models and the design/holdout split.
+scenarios:
+  base_seed: 1000        # scenario i uses seed base_seed + i
+  count: 300             # 50 per incident type (types cycle by seed)
+  out_dir: data/scenarios
+
+run_mix:                 # 300 runs = 60 clean + 30 per variant; adjust after the 20-run pilot
+  clean: 60
+  per_variant: 30
+  variants: [E1, E2, E3, R1, R2, I1, I2, I3]
+  pilot_runs: 20
+
+models:
+  agent: qwen2.5:3b
+  judge: qwen2.5:7b
+  judge_fallbacks: [phi4-mini, llama3.2:3b]
+  num_ctx: 8192          # always passed on every Ollama request
+
+split:
+  design: 0.7
+  holdout: 0.3
+  stratify_by: variant
+  seed: 42
+
+bootstrap:
+  resamples: 2000
+  seed: 7
