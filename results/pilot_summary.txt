@@ -1,0 +1,62 @@
+PILOT SUMMARY (aggregates only; no raw traces)
+qwen2.5:3b, num_ctx 8192, temp 0, seed 7, prompts frozen at cd47821, success rule = root cause AND action AND target
+Scenarios: first 12 planned (sc-01100..sc-01111, 2 per incident type). Faulted: 1 run per variant (planner, per_variant=1, plan_seed 11).
+
+1. CLEAN SUCCESS PER INCIDENT TYPE AND ELIGIBILITY
+incident_type          success  runs   failing component(s) of the unsuccessful runs
+db_pool_exhausted            1     2   sc-01104:root_cause+action+target
+bad_deploy                   0     2   sc-01105:target, sc-01111:root_cause+action+target
+memory_leak                  2     2   -
+cross_zone_latency           0     2   sc-01101:root_cause+action, sc-01107:root_cause+action+target
+expired_certificate          1     2   sc-01108:target
+cache_eviction_storm         2     2   -
+ALL                          6    12   eligible for faults: 6/12 = 50%
+eligible scenarios: ['sc-01110', 'sc-01100', 'sc-01106', 'sc-01102', 'sc-01103', 'sc-01109']
+
+2. PER VARIANT (planned pair) AND INAPPLICABLE PAIRS AMONG ELIGIBLE SCENARIOS
+variant name                scenario   outcome     first_error_step  answer vs truth
+E1      stale_window        sc-01103   masked      None              cache_eviction_storm/warm_cache_rate_limit/cache
+E2      wrong_service       sc-01110   manifested  evidence_agent    memory_leak/restart_service_open_bug/api-gateway
+E3      missing_alert       sc-01102   manifested  evidence_agent    expired_certificate/renew_certificate/catalog
+R1      misleading_prior    sc-01106   manifested  reasoning_agent   db_pool_exhausted/raise_pool_limit_restart_checkout/checkout
+R2      unstable_sampling   sc-01100   masked      None              memory_leak/restart_service_open_bug/catalog
+I1      dropped_field       sc-01109   masked      None              cache_eviction_storm/warm_cache_rate_limit/cache
+I2      truncated_findings  sc-01106   manifested  handover_1        bad_deploy/rollback_deploy/auth
+I3      dropped_target      sc-01110   masked      None              db_pool_exhausted/raise_pool_limit_restart_checkout/checkout
+totals: manifested=4 masked=4 (n=8; one run per variant is an anecdote, not a rate)
+skipped as inapplicable: 1 of 48 eligible (scenario, variant) pairs: ['sc-01106-E3']
+
+3. RUN TIME (seconds per run, whole pipeline incl. 3 model calls)
+clean (12)    mean  33.7  median  33.5  p95  38.1  min  29.8  max  40.8
+faulted (8)   mean  25.0  median  24.7  p95  31.2  min  18.5  max  32.3
+all (20)      mean  30.2  median  31.6  p95  36.1  min  18.5  max  40.8
+evidence step: clean mean 26.6s, faulted mean 18.6s (reasoning ~4-5s, action ~2s in both)
+CACHE EFFECT: 4 faulted runs had prompt_eval ~0.04s on the evidence call (identical prompt to their clean twin; Ollama reused its prompt cache): ['sc-01100-R2', 'sc-01106-I2', 'sc-01106-R1', 'sc-01109-I1']. Their evidence step took ~13-18s instead of ~26s.
+PROJECTION, remaining 48 clean + 232 faulted: 48x33.7s + 232x(25.0..33.7)s = 2.1 to 2.6 hours (lower bound assumes the cache effect holds for every faulted run; upper bound assumes none)
+
+4. TRACE SIZE: median bytes (and events) per category per run, over the 20 traced runs
+category          median B    p95 B  median ev   share of median total
+step_io              4,378    5,277          3                     9%
+tool_calls          12,773   13,340         15                    27%
+prompt_shown        17,130   18,088          3                    36%
+confidence           1,610    1,733          3                     3%
+timings              6,706    6,775         23                    14%
+handover_state       3,556    4,459          2                     7%
+skeleton             1,366    1,377          7                     3%
+TOTAL per run       46,770   49,377    (20 runs, 1064 events)
+
+5. HEALTH
+memory_pressure free %: before 70%, immediately after the last run + unload 33%, ~15 min later (idle) 74%
+foreign models detected after any run: none (preflight ok)
+agent failures (no valid output after retry): 0; retries: 0; ollama errors: 0
+
+6. FINDINGS THAT MAY NEED A DECISION (nothing was changed)
+a) Clean success is 6/12 = 50%, not the 10/12 of baseline v1. Two causes, separated by an A/B on identical seeds:
+   - the target rule: sc-01105 (bad_deploy) and sc-01108 (expired_certificate) have the right root cause and action but act on
+     the wrong service (auth instead of catalog; api-gateway instead of auth);
+   - the synth_key_ prefix: re-running sc-01104 and sc-01111 with the old sk_live_ prefix in memory (same draws, same seed)
+     gives db_pool_exhausted/checkout and bad_deploy/catalog (both correct); with synth_key_ the same runs give bad_deploy/auth and
+     cache_eviction_storm/cache (both wrong). Changing only the planted key prefix (sk_live_ -> synth_key_) flipped 2 of 2 tested scenarios.
+b) Baseline v1 (10/12) is therefore not comparable to this pilot (different strings in prompts, plus the target rule).
+c) Eligibility is 6/12; bad_deploy and cross_zone_latency have 0 eligible scenarios in the pilot, so those types cannot host faults yet.
+d) Pilot latencies of faulted runs are optimistic because of prompt-cache reuse (section 3); this matters for the later latency study.
