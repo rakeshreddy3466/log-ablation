@@ -10,6 +10,7 @@ resident models after every call.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import random
 import statistics
@@ -19,7 +20,7 @@ from typing import Any, Literal
 
 import pandas as pd
 import yaml
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 from ..agents import guard
 from ..agents.llm import NUM_CTX, LLMClient, OllamaClient
@@ -47,6 +48,36 @@ class JudgeVerdict(BaseModel):
     confidence: float = Field(ge=0.0, le=1.0)
 
 
+# first error step -> the variants that can start there (the shared taxonomy)
+STEP_VARIANTS: dict[str, tuple[str, ...]] = {
+    "evidence_agent": ("E1", "E2", "E3"),
+    "handover_1": ("I1", "I2"),
+    "reasoning_agent": ("R1", "R2"),
+    "handover_2": ("I3",),
+    "action_agent": (),
+}
+
+
+class JudgeVerdictV2(BaseModel):
+    """Field order is the order the model writes them: observations first, then the labels."""
+
+    observations: str = Field(max_length=1200)
+    first_error_step: StepName
+    root_cause_variant: VariantName
+    confidence: float = Field(ge=0.0, le=1.0)
+
+    @model_validator(mode="after")
+    def _variant_belongs_to_step(self) -> JudgeVerdictV2:
+        if self.root_cause_variant not in STEP_VARIANTS[self.first_error_step]:
+            raise ValueError(
+                f"{self.root_cause_variant} cannot start at {self.first_error_step}; "
+                f"possible there: {list(STEP_VARIANTS[self.first_error_step])}"
+            )
+        return self
+
+
+PROMPT_VERSION = "v2"
+
 STEP_TEXT = {
     "evidence_agent": "collects facts with the monitoring tools and writes the evidence bundle",
     "handover_1": "passes the evidence bundle from the evidence agent to the reasoning agent",
@@ -66,12 +97,39 @@ VARIANT_TEXT = {
 }
 
 
-def system_prompt() -> str:
-    steps = "\n".join(f"- {s}: {STEP_TEXT[s]}" for s in STEPS)
-    variants = "\n".join(
+def _variant_lines(order_key: str) -> str:
+    order = list(VARIANTS)
+    seed = int.from_bytes(hashlib.sha256(order_key.encode()).digest()[:8], "big")
+    random.Random(seed).shuffle(order)
+    return "\n".join(
         f"- {v} ({VARIANT_NAMES[v]}, first error at {FIRST_ERROR_STEP[v]}): {VARIANT_TEXT[v]}"
-        for v in VARIANTS
+        for v in order
     )
+
+
+def system_prompt(version: str = PROMPT_VERSION, order_key: str = "") -> str:
+    """Instructions and taxonomy. v2 lists the variants in an order seeded by `order_key`."""
+    steps = "\n".join(f"- {s}: {STEP_TEXT[s]}" for s in STEPS)
+    if version == "v1":
+        variants = "\n".join(
+            f"- {v} ({VARIANT_NAMES[v]}, first error at {FIRST_ERROR_STEP[v]}): {VARIANT_TEXT[v]}"
+            for v in VARIANTS
+        )
+        task = (
+            "Output only JSON with first_error_step, root_cause_variant, reason (one or two "
+            "sentences, citing the log evidence) and confidence (0 to 1)."
+        )
+    else:
+        variants = _variant_lines(order_key)
+        task = (
+            "Work in this order and output only JSON with these fields, in this order:\n"
+            "1. observations: one line per step, in pipeline order: what went in, what came "
+            "out, and anything that looks inconsistent or changed between input and output.\n"
+            "2. first_error_step: the earliest step at which something went wrong.\n"
+            "3. root_cause_variant: choose it only among the faults whose first error is at "
+            "the step you chose.\n"
+            "4. confidence: 0 to 1."
+        )
     return (
         "You are a reliability engineer reading the log of one run of a three-agent "
         "incident-triage pipeline for an online shop. Steps, in order:\n"
@@ -79,11 +137,9 @@ def system_prompt() -> str:
         "Exactly one fault was injected into this run. Possible faults:\n"
         f"{variants}\n\n"
         "The log is split into sections C1..C6 plus the skeleton; a section may say "
-        "'(not logged)'. "
-        "Long strings are shortened with ' ... ' (head and tail kept). The run may still have "
-        "ended with a correct answer: find where the fault was introduced anyway. "
-        "Output only JSON with first_error_step, root_cause_variant, reason (one or two "
-        "sentences, citing the log evidence) and confidence (0 to 1)."
+        "'(not logged)'. Long strings are shortened with ' ... ' (head and tail kept). The run "
+        "may still have ended with a correct answer: find where the fault was introduced "
+        f"anyway. {task}"
     )
 
 
@@ -91,11 +147,27 @@ def user_prompt(events: list[dict[str, Any]]) -> str:
     return "Log of the run:\n\n" + render_trace(events) + "\n\nWhich fault was injected, and where?"
 
 
-def judge_events(llm: LLMClient, events: list[dict[str, Any]]) -> dict[str, Any]:
-    """One judge call over already-filtered events; a failed call returns valid=False."""
+def judge_events(
+    llm: LLMClient,
+    events: list[dict[str, Any]],
+    *,
+    version: str = PROMPT_VERSION,
+    order_key: str = "",
+) -> dict[str, Any]:
+    """One judge call over already-filtered events; a failed call returns valid=False.
+
+    `order_key` (run id + condition) only seeds the shuffle of the variant list; it is never
+    shown to the model.
+    """
     t0 = time.perf_counter()
+    model_cls = JudgeVerdict if version == "v1" else JudgeVerdictV2
     res = generate_structured(
-        llm, JudgeVerdict, system_prompt(), user_prompt(events), temperature=0.0, seed=JUDGE_SEED
+        llm,
+        model_cls,
+        system_prompt(version, order_key),
+        user_prompt(events),
+        temperature=0.0,
+        seed=JUDGE_SEED,
     )
     wall = time.perf_counter() - t0
     # a prompt that filled num_ctx was cut by the server: never scored as a verdict
@@ -103,13 +175,13 @@ def judge_events(llm: LLMClient, events: list[dict[str, Any]]) -> dict[str, Any]
         a.reply is not None and a.reply.timings.get("prompt_eval_count", 0) >= NUM_CTX
         for a in res.attempts
     )
-    v: JudgeVerdict | None = None if ctx_full else res.parsed
+    v: Any = None if ctx_full else res.parsed
     tm = res.timings
     return {
         "valid": v is not None,
         "pred_first_error": v.first_error_step if v else "invalid",
         "pred_variant": v.root_cause_variant if v else "invalid",
-        "reason": v.reason if v else "",
+        "reason": (getattr(v, "observations", None) or getattr(v, "reason", "")) if v else "",
         "confidence": v.confidence if v else None,
         "attempts": len(res.attempts),
         "error": "context_full" if ctx_full else res.error,
@@ -117,6 +189,7 @@ def judge_events(llm: LLMClient, events: list[dict[str, Any]]) -> dict[str, Any]
         "prompt_tokens": tm.get("prompt_eval_count"),
         "output_tokens": tm.get("eval_count"),
         "context_full": ctx_full,
+        "prompt_version": version,
     }
 
 
@@ -133,18 +206,21 @@ def select_runs(groups: tuple[str, ...]) -> list[dict[str, Any]]:
     return [r for r in load_side("design") if r["meta"]["outcome"] in groups]
 
 
-def make_client(keep_alive: str = "30m") -> OllamaClient:
-    return OllamaClient(model=JUDGE_MODEL, num_ctx=NUM_CTX, keep_alive=keep_alive, timeout_s=600)
+def make_client(keep_alive: str = "30m", model: str = JUDGE_MODEL) -> OllamaClient:
+    return OllamaClient(model=model, num_ctx=NUM_CTX, keep_alive=keep_alive, timeout_s=600)
 
 
-def switch_to_judge(agent_model: str = "qwen2.5:3b") -> OllamaClient:
-    """Unload the agent model, then refuse to go on unless only the judge model may load."""
-    client = make_client()
-    try:
-        OllamaClient(model=agent_model).unload(agent_model)
-    except Exception as e:  # noqa: BLE001 - nothing loaded / not installed: preflight decides
-        print(f"unload {agent_model}: {e}")
-    guard.preflight(JUDGE_MODEL)
+def switch_to_judge(
+    agent_model: str = "qwen2.5:3b", model: str = JUDGE_MODEL, also_unload: tuple[str, ...] = ()
+) -> OllamaClient:
+    """Unload the agent (and any named) model, then refuse to go on unless only `model` may load."""
+    client = make_client(model=model)
+    for name in (agent_model, *also_unload):
+        try:
+            OllamaClient(model=name).unload(name)
+        except Exception as e:  # noqa: BLE001 - nothing loaded / not installed: preflight decides
+            print(f"unload {name}: {e}")
+    guard.preflight(model)
     return client
 
 
@@ -155,7 +231,9 @@ def timing_pilot(n: int = 5) -> None:
     sample = rng.sample(runs, n)
     secs, rows = [], []
     for r in sample:
-        out = judge_events(client, filter_trace(r["events"], []))
+        out = judge_events(
+            client, filter_trace(r["events"], []), order_key=r["meta"]["run_id"] + "|full"
+        )
         foreign = guard.check_after_run(JUDGE_MODEL)
         secs.append(out["wall_s"])
         rows.append((r["meta"]["run_id"], out, foreign))
@@ -189,7 +267,7 @@ def sanity_check(n: int = 10) -> None:
     secs, toks = [], []
     for r in sample:
         m = r["meta"]
-        out = judge_events(client, r["events"])
+        out = judge_events(client, r["events"], order_key=m["run_id"] + "|full")
         rule = attribute(r["events"])
         j_fe += out["pred_first_error"] == FIRST_ERROR_STEP[m["variant"]]
         j_rc += out["pred_variant"] == m["variant"]
@@ -249,7 +327,9 @@ def run_all(groups: tuple[str, ...], limit: int | None = None) -> None:
         for i, (r, cond, kept) in enumerate(todo[:limit] if limit else todo, 1):
             m = r["meta"]
             drop = [c for c in ABLATABLE if c not in kept]
-            out = judge_events(client, filter_trace(r["events"], drop))
+            out = judge_events(
+                client, filter_trace(r["events"], drop), order_key=f"{m['run_id']}|{cond}"
+            )
             foreign = guard.check_after_run(JUDGE_MODEL)
             rec = {
                 "run_id": m["run_id"], "scenario_id": m["scenario_id"], "group": m["outcome"],

@@ -88,8 +88,8 @@ class FakeLLM:
                         {"num_ctx": 8192})  # fmt: skip
 
 
-GOOD = json.dumps({"first_error_step": "handover_1", "root_cause_variant": "I2",
-                   "reason": "findings shortened", "confidence": 0.8})  # fmt: skip
+GOOD = json.dumps({"observations": "handover 1 passed fewer findings", "first_error_step":
+                   "handover_1", "root_cause_variant": "I2", "confidence": 0.8})  # fmt: skip
 
 
 def test_prompt_never_contains_labels() -> None:
@@ -141,3 +141,46 @@ def test_prompt_that_fills_the_context_is_invalid_never_scored() -> None:
     out = judge.judge_events(Full([GOOD]), make_events(2, 10))
     assert not out["valid"] and out["context_full"] and out["pred_variant"] == "invalid"
     assert out["error"] == "context_full"
+
+
+def test_v2_schema_writes_observations_before_the_labels() -> None:
+    props = list(judge.JudgeVerdictV2.model_json_schema()["properties"])
+    assert props == ["observations", "first_error_step", "root_cause_variant", "confidence"]
+
+
+def test_variant_must_belong_to_the_chosen_step() -> None:
+    wrong = json.dumps({"observations": "x", "first_error_step": "reasoning_agent",
+                        "root_cause_variant": "E2", "confidence": 0.5})  # fmt: skip
+    out = judge.judge_events(FakeLLM([wrong, wrong]), make_events(2, 10))
+    assert not out["valid"] and out["attempts"] == 2
+    assert judge.judge_events(FakeLLM([wrong, GOOD]), make_events(2, 10))["valid"]
+
+
+def test_variant_order_is_shuffled_by_key_deterministically() -> None:
+    a1 = judge.system_prompt(order_key="run-a|full")
+    assert a1 == judge.system_prompt(order_key="run-a|full")
+    orders = {judge.system_prompt(order_key=f"run-{i}|full") for i in range(20)}
+    assert len(orders) > 10  # position varies across calls
+
+    # the set of lines never changes, only their order
+    def lines(p: str) -> list[str]:
+        return sorted(x for x in p.splitlines() if x[:3] in ("- E", "- R", "- I"))
+
+    assert lines(a1) == lines(judge.system_prompt(order_key="other"))
+
+
+def test_order_key_is_not_shown_to_the_model() -> None:
+    llm = FakeLLM([GOOD])
+    judge.judge_events(llm, make_events(2, 10), order_key=SECRET_RUN + "|full")
+    assert SECRET_RUN not in llm.prompts[0][0] + llm.prompts[0][1]
+
+
+def test_dev_set_is_two_per_variant_on_the_design_side() -> None:
+    from collections import Counter
+    from pathlib import Path
+
+    dev = json.loads(Path("results/judge_dev_set.json").read_text())
+    design = set(json.loads(Path("results/split.json").read_text())["design"])
+    assert len(dev["runs"]) == 16
+    assert set(Counter(r["variant"] for r in dev["runs"]).values()) == {2}
+    assert all(r["run_id"].rsplit("-", 1)[0] in design for r in dev["runs"])

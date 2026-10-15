@@ -1,0 +1,86 @@
+{
+ "seed": 7,
+ "side": "design",
+ "runs": [
+  {
+   "run_id": "sc-01172-E1",
+   "variant": "E1",
+   "outcome": "manifested"
+  },
+  {
+   "run_id": "sc-01186-E1",
+   "variant": "E1",
+   "outcome": "manifested"
+  },
+  {
+   "run_id": "sc-01150-E2",
+   "variant": "E2",
+   "outcome": "manifested"
+  },
+  {
+   "run_id": "sc-01110-E2",
+   "variant": "E2",
+   "outcome": "manifested"
+  },
+  {
+   "run_id": "sc-01192-E3",
+   "variant": "E3",
+   "outcome": "manifested"
+  },
+  {
+   "run_id": "sc-01176-E3",
+   "variant": "E3",
+   "outcome": "manifested"
+  },
+  {
+   "run_id": "sc-01170-R1",
+   "variant": "R1",
+   "outcome": "manifested"
+  },
+  {
+   "run_id": "sc-01103-R1",
+   "variant": "R1",
+   "outcome": "manifested"
+  },
+  {
+   "run_id": "sc-01186-R2",
+   "variant": "R2",
+   "outcome": "manifested"
+  },
+  {
+   "run_id": "sc-01171-R2",
+   "variant": "R2",
+   "outcome": "manifested"
+  },
+  {
+   "run_id": "sc-01174-I1",
+   "variant": "I1",
+   "outcome": "manifested"
+  },
+  {
+   "run_id": "sc-01186-I1",
+   "variant": "I1",
+   "outcome": "manifested"
+  },
+  {
+   "run_id": "sc-01112-I2",
+   "variant": "I2",
+   "outcome": "manifested"
+  },
+  {
+   "run_id": "sc-01152-I2",
+   "variant": "I2",
+   "outcome": "manifested"
+  },
+  {
+   "run_id": "sc-01139-I3",
+   "variant": "I3",
+   "outcome": "manifested"
+  },
+  {
+   "run_id": "sc-01135-I3",
+   "variant": "I3",
+   "outcome": "masked"
+  }
+ ]
+}
