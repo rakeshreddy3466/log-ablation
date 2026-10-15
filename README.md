@@ -12,7 +12,7 @@ sensitive content.
 
 **Headline.** Two categories carry almost all of the value: tool calls (C2) and the prompt shown
 (C3), plus a handover record (C6) for interface faults. The frozen minimum profile
-**C2 (masked) + C3 (light: template hash and options) + C6** keeps attribution at full-logging
+**C2 masked (Presidio plus an extra .test e-mail pattern) + C3 light (template hash and options) + C6** keeps attribution at full-logging
 accuracy (100% on 27 held-back manifested runs, 97.7% on 44 masked runs) at 39% of the bytes and
 about a tenth of the planted sensitive values. An LLM judge (qwen2.5:7b) did not beat chance and is
 reported as a negative result; a deterministic rule checker is the attribution method.
@@ -28,7 +28,7 @@ reported as a negative result; a deterministic rule checker is the attribution m
 | Clearly above placebo | R1 71%, E2 63%, I2 61%, E3 43% (E1, R2, I1, I3 are not) |
 | Full logging (design, rule checker) | 92.4% first error, 92.4% root cause |
 | Value | minus C2: -37.9 points; minus C3: -15.2 / -18.2; C1, C4, C5, C6 alone: no measurable value |
-| Size (median per run) | full 46.9 kB; C3 17.2 kB; C2 12.9 kB; frozen profile 18.3 kB (39%) |
+| Size (median per run) | full 46.9 kB; C3 17.2 kB; C2 12.9 kB; frozen profile (C2 masked with the extra .test e-mail pattern + C3 light + C6) 18.3 kB (39%) |
 | Write overhead | 0.5 ms per run with everything on (0.002% of a 29.5 s run) |
 | Presidio vs planted values | IP, API key, order id 100%; **e-mail 0%** (`.test` domain); overall 77.6% |
 | Frozen profile on the holdout | 100% / 100% (manifested), 97.7% / 97.7% (masked); full is the same |

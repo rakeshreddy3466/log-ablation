@@ -31,12 +31,18 @@ log line on a bystander service).
 seed the twin is the counterfactual: a faulted run that fails while its twin succeeded is
 *manifested* (the fault caused the failure), one that still succeeds is *masked*.
 
-**Placebo.** The share of eligible scenarios whose answer changes under a meaningless change
-(P0) is the baseline against which a fault's manifestation rate is read.
+**Placebo.** The pilot showed that the pipeline is sensitive to cosmetic changes: changing only the
+planted fake API-key prefix from `sk_live_` to `synth_key_` flipped 2 of 2 tested answers from right
+to wrong (`results/pilot_summary.txt`). That is why a placebo control exists: the share of eligible
+scenarios whose answer changes under a meaningless change (P0) is the baseline against which a
+fault's manifestation rate is read.
 
 **Dataset.** 375 runs: 100 clean (49 clean_success, 51 natural_failure), 245 faulted
 (93 manifested, 152 masked), 30 placebo. cross_zone_latency has no eligible scenario (0 of 17 clean
-runs succeeded), so it contributes no faulted runs.
+runs succeeded), so it contributes no faulted runs. A manual diagnosis of two cross_zone runs
+(`results/diagnostic_cross_zone.txt`) showed the evidence agent dropping the zone-change evidence
+(the first error), after which the reasoning agent invented supporting detail; the raw tool results
+did contain the decisive deploy record.
 
 **Logging and ablation.** Everything is logged once; categories are removed afterwards by
 filtering: C1 step_io, C2 tool_calls, C3 prompt_shown, C4 confidence, C5 timings, C6 handover_state,
@@ -82,8 +88,10 @@ values); with Presidio alone they still leak e-mails. C3-light (template id, sha
 prompt, options) keeps full accuracy at 975 bytes instead of 17,165.
 
 **Minimum profile (F7, T4).** Over 320 candidates the smallest within 5 points is
-**C2 (masked) + C3 (light) + C6**: 18.3 kB median (39% of full, 3.9 kB gzip), 92.4% / 92.4% on the
-design side, 1.7 planted values per run instead of 19.4.
+**C2 masked (Presidio plus an extra .test e-mail pattern) + C3 light (template id,
+system-prompt hash, options) + C6**, written `C2x+C3l+C6` in the figures and tables: 18.3 kB median
+(39% of full, 3.9 kB gzip), 92.4% / 92.4% on the design side, 1.7 planted values per run instead
+of 19.4.
 
 **Holdout (F9, T5).** On 14 held-back scenarios the frozen profile scores 100% first-error and
 100% root-cause on 27 manifested runs (full: 100%), and 97.7% / 97.7% on 44 masked runs (full:
@@ -125,7 +133,8 @@ and scores: `results/judge_dev_log.md`.
 
 ## 6. Future work
 
-Mask C6 as well (it still carries about 2 planted values per run; a post-hoc recommendation, not
+Apply the method to real operational logs in another domain, for example network fault
+management, where the incident types and sensitive fields differ. Mask C6 as well (it still carries about 2 planted values per run; a post-hoc recommendation, not
 applied). A larger or fine-tuned judge, or tool-assisted checking, on the same traces. More
 incident types and real logs, repeated random splits, several placebo positions and lines, other
 agent models and non-zero temperatures, and a precision-oriented E3 rule.
