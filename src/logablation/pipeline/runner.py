@@ -11,6 +11,7 @@ import argparse
 import json
 import sys
 from collections.abc import Callable
+from dataclasses import replace
 from pathlib import Path
 from typing import Any
 
@@ -21,7 +22,7 @@ from ..agents.llm import LLMClient
 from ..scenarios.models import Scenario
 from ..scenarios.taxonomy import INCIDENT_TYPES
 from .graph import run_pipeline
-from .hooks import PipelineHooks
+from .hooks import Event, PipelineHooks
 from .record import RunRecord
 
 SCEN_DIR = Path("data/scenarios")
@@ -92,6 +93,7 @@ def run_clean_phase(
     *,
     scen_dir: Path = SCEN_DIR,
     hooks: PipelineHooks | None = None,
+    tracer: Callable[[Event], None] | None = None,
     check_foreign: Callable[[], list[str]] = lambda: [],
     log: Callable[[str], None] = print,
 ) -> list[RunRecord]:
@@ -106,7 +108,10 @@ def run_clean_phase(
             log(f"skip {rid} (finished)")
             continue
         sc = Scenario.model_validate_json((scen_dir / f"{sid}.json").read_text())
-        rec = run_pipeline(sc, llm, run_id=rid, hooks=hooks)
+        run_hooks = hooks or PipelineHooks()
+        if tracer is not None:
+            run_hooks = replace(run_hooks, on_event=tracer)
+        rec = run_pipeline(sc, llm, run_id=rid, hooks=run_hooks)
         rec.foreign_models = check_foreign()
         _append(out, rec)
         new.append(rec)
@@ -131,6 +136,7 @@ def run_faulted_phase(
     *,
     plan_seed: int,
     scen_dir: Path = SCEN_DIR,
+    tracer: Callable[[Event], None] | None = None,
     check_foreign: Callable[[], list[str]] = lambda: [],
     log: Callable[[str], None] = print,
 ) -> list[RunRecord]:
@@ -150,6 +156,8 @@ def run_faulted_phase(
             continue
         sc = Scenario.model_validate_json((scen_dir / f"{item.scenario_id}.json").read_text())
         hooks = build_hooks(item.variant, sc, derive_seed(plan_seed, item.run_id))
+        if tracer is not None:
+            hooks = replace(hooks, on_event=tracer)
         rec = run_pipeline(
             sc,
             llm,
@@ -189,6 +197,10 @@ def main(argv: list[str] | None = None) -> None:
     ap.add_argument("--variants", help="faulted phase: comma-separated variants to run")
     ap.add_argument("--scenarios", help="faulted phase: comma-separated scenario ids to run")
     ap.add_argument("--eligibility-out", type=Path, default=Path("results/eligibility.csv"))
+    ap.add_argument("--trace-dir", type=Path, default=Path("runs/raw"))
+    ap.add_argument("--trace-categories", help="comma list of ids/names to write (default: all)")
+    ap.add_argument("--no-trace", action="store_true", help="logging off (latency baseline)")
+    ap.add_argument("--traces-parquet", type=Path, default=Path("runs/traces.parquet"))
     a = ap.parse_args(argv)
 
     cfg: dict[str, Any] = yaml.safe_load(a.config.read_text())
@@ -197,6 +209,13 @@ def main(argv: list[str] | None = None) -> None:
     guard.preflight(model)  # exits if any other model is loaded
     llm = OllamaClient(model=model, num_ctx=cfg["models"]["num_ctx"])
     foreign = lambda: guard.check_after_run(model)  # noqa: E731
+    from ..tracing import Tracer, compact  # lazy: tracing imports pipeline.hooks
+
+    tracer = None
+    if not a.no_trace:
+        cats = a.trace_categories.split(",") if a.trace_categories else None
+        tracer = Tracer(a.trace_dir, cats)
+        print(f"tracing to {a.trace_dir}: {sorted(tracer.categories)}")
     try:
         if a.phase in ("clean", "all"):
             ids = plan_clean(SCEN_DIR, mix["clean"], mix["first_seed"])
@@ -205,7 +224,7 @@ def main(argv: list[str] | None = None) -> None:
                 todo = [i for i in ids if clean_run_id(i) not in fin][: a.limit]
                 ids = [i for i in ids if i in todo or clean_run_id(i) in fin]
             print(f"clean phase: {len(ids)} scenarios -> {a.out}")
-            run_clean_phase(ids, llm, a.out, check_foreign=foreign)
+            run_clean_phase(ids, llm, a.out, tracer=tracer, check_foreign=foreign)
         if a.phase in ("faulted", "all"):
             clean = [r for r in read_records(a.out) if r.get("variant") is None]
             plan = plan_faulted(
@@ -228,9 +247,14 @@ def main(argv: list[str] | None = None) -> None:
                     r for r in runs if r.run_id not in fin
                 ][: a.limit]
             print(f"faulted phase: {len(runs)} runs -> {a.out}")
-            run_faulted_phase(runs, llm, a.out, plan_seed=mix["plan_seed"], check_foreign=foreign)
+            run_faulted_phase(
+                runs, llm, a.out, plan_seed=mix["plan_seed"], tracer=tracer, check_foreign=foreign
+            )
     finally:
         llm.unload()
+    if tracer is not None:
+        n_rows = compact(a.trace_dir, a.traces_parquet)
+        print(f"compacted {n_rows} events -> {a.traces_parquet}")
     done = read_records(a.out)
     by: dict[str, int] = {}
     for r in done:

@@ -79,6 +79,8 @@ bootstrap), and the design/holdout split is by scenario (all runs of a scenario 
 ## Logging
 Log everything in every run; ablate afterwards by filtering. Each event is one JSON line:
 {run_id, step, span_id, category, timestamp, payload}. Write .jsonl while running, compact to Parquet.
+Each category can be switched off at write time (`make run` flags `--trace-categories`, `--no-trace`).
+The outcome check is never traced (a verdict is a label, not log content).
 | ID | Category | Content |
 | C1 | step_io | object each agent received and returned |
 | C2 | tool_calls | tool name, arguments, full result |

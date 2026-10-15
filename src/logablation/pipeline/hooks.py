@@ -87,5 +87,36 @@ class HookedLLM:
         return self.inner.chat(system, user, schema, temperature=temperature, seed=seed)
 
 
+class TimedLLM:
+    """Records (start, end) epoch seconds of every model call, in order, for the tracer's C5."""
+
+    def __init__(self, inner: LLMClient) -> None:
+        self.inner = inner
+        self.model = getattr(inner, "model", "unknown")
+        self.calls: list[dict[str, Any]] = []
+
+    def chat(
+        self,
+        system: str,
+        user: str,
+        schema: dict[str, Any],
+        *,
+        temperature: float | None = None,
+        seed: int | None = None,
+    ) -> LLMReply:
+        t0 = time.time()
+        try:
+            reply = self.inner.chat(system, user, schema, temperature=temperature, seed=seed)
+        except Exception:
+            self.calls.append({"start": t0, "end": time.time(), "failed": True})
+            raise
+        self.calls.append({"start": t0, "end": time.time(), "failed": False})
+        return reply
+
+    def drain(self) -> list[dict[str, Any]]:
+        out, self.calls = self.calls, []
+        return out
+
+
 def now() -> float:
     return time.time()

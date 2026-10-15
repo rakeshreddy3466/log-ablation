@@ -9,8 +9,9 @@ which is also what the tracer will record as the tool call.
 from __future__ import annotations
 
 import json
+import time
 from collections.abc import Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any
 
 from ..scenarios.models import Scenario
@@ -33,12 +34,17 @@ def estimate_tokens(obj: Any) -> int:
 class ToolContext:
     scenario: Scenario
     transform: Transform = identity_transform
+    # (start, end) epoch seconds of every call, in call order; read by the tracer for C5
+    timings: list[tuple[float, float]] = field(default_factory=list, repr=False)
 
     def call(self, tool_name: str, **args: Any) -> Any:
         if tool_name not in TOOLS:
             raise KeyError(f"unknown tool {tool_name!r}")
+        t0 = time.time()
         result = TOOLS[tool_name](self.scenario, **args)
-        return self.transform(tool_name, _normalised(tool_name, args), result)
+        out = self.transform(tool_name, _normalised(tool_name, args), result)
+        self.timings.append((t0, time.time()))
+        return out
 
     def get_alerts(self, start: str, end: str, service: str | None = None) -> Any:
         return self.call("get_alerts", service=service, start=start, end=end)

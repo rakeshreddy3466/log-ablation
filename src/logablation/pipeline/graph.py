@@ -31,7 +31,7 @@ from ..scenarios.models import Scenario
 from ..scenarios.taxonomy import FIRST_ERROR_STEP
 from ..tools import ToolContext, build_ticket
 from .diff import field_diff
-from .hooks import Event, HookedLLM, PipelineHooks, now
+from .hooks import Event, HookedLLM, PipelineHooks, TimedLLM, now
 from .record import HandoverRecord, RunRecord, StepRecord, label_outcome, outcome_success
 
 
@@ -74,7 +74,8 @@ def build_graph(
     """Compile the graph for one run. Nodes close over the run's scenario, llm and hooks."""
     ticket = build_ticket(scenario)
     tools = ToolContext(scenario, transform=hooks.tool_transform)
-    reasoning_llm = HookedLLM(llm, hooks.reasoning_prompt, hooks.reasoning_options)
+    timed = TimedLLM(llm)  # every agent's model calls pass through it (timing only)
+    reasoning_llm = HookedLLM(timed, hooks.reasoning_prompt, hooks.reasoning_options)
     truth = scenario.ground_truth
 
     def emit(step: str, phase: str, **data: Any) -> None:
@@ -92,7 +93,15 @@ def build_graph(
             res = call(state)
             wall = time.perf_counter() - t0
             out = res.output.model_dump(mode="json") if isinstance(res.output, BaseModel) else None
-            emit(step, "end", output=out, agent_result=res, wall_s=wall)
+            emit(
+                step,
+                "end",
+                output=out,
+                agent_result=res,
+                wall_s=wall,
+                model_timings=timed.drain(),
+                tool_timings=list(tools.timings) if step == "evidence_agent" else [],
+            )
             update: State = {
                 key: out,  # type: ignore[misc]
                 "steps": [_step_record(step, res, wall)],
@@ -157,7 +166,7 @@ def build_graph(
         agent_node(
             "evidence_agent",
             "evidence_bundle",
-            lambda s: evidence_agent(ticket, tools, llm),
+            lambda s: evidence_agent(ticket, tools, timed),
             lambda s: ticket.model_dump(mode="json"),
         ),
     )
@@ -180,7 +189,7 @@ def build_graph(
         agent_node(
             "action_agent",
             "action_plan",
-            lambda s: action_agent(s["handover_2_received"], llm),  # type: ignore[typeddict-item]
+            lambda s: action_agent(s["handover_2_received"], timed),  # type: ignore[typeddict-item]
             lambda s: s["handover_2_received"],
         ),  # type: ignore[typeddict-item]
     )

@@ -1,0 +1,10 @@
+Events and raw bytes per category, one clean run and one I1 run on sc-01100 (aggregates only)
+category                      sc-01100-I1            sc-01100-clean
+step_io               3 ev     5,040 B          3 ev     4,871 B   
+tool_calls           15 ev    12,471 B         15 ev    12,516 B   
+prompt_shown          3 ev    17,272 B          3 ev    17,238 B   
+confidence            3 ev     1,608 B          3 ev     1,611 B   
+timings              23 ev     6,694 B         23 ev     6,765 B   
+handover_state        2 ev     4,560 B          2 ev     4,117 B   
+skeleton              7 ev     1,350 B          7 ev     1,371 B   
+TOTAL                56 ev    48,995 B         56 ev    48,489 B   
