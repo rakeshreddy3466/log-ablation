@@ -1,0 +1,5 @@
+| judge | dev runs | first-error acc | root-cause acc | top label | top label share | valid |
+|---|---|---|---|---|---|---|
+| v2 qwen2.5:7b | 16 | 0.312 | 0.125 | E3 | 0.25 | 15/16 |
+| v3 qwen2.5:7b | 16 | 0.438 | 0.188 | I2 | 0.25 | 16/16 |
+| v3 phi4-mini | 16 | 0.25 | 0.125 | I2 | 0.438 | 14/16 |

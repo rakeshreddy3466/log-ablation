@@ -13,19 +13,17 @@ import pandas as pd  # noqa: E402
 
 from ..analysis.profile import FULL_NAME, frontier  # noqa: E402
 from ..tracing.categories import CATEGORY_IDS  # noqa: E402
+from .style import save  # noqa: E402
 
 INK, MUTED, BLUE, ORANGE, GREY = "#1f2328", "#59636e", "#2a6fbb", "#d98b2b", "#b8c1cc"
 IDS = list(CATEGORY_IDS)
 
 
-def _save(fig: plt.Figure, name: str) -> None:
-    Path("figures").mkdir(exist_ok=True)
-    for ext in ("png", "svg"):
-        fig.savefig(f"figures/{name}.{ext}", bbox_inches="tight")
-    plt.close(fig)
+def _save(fig: plt.Figure, name: str, out_dir: Path = Path("figures")) -> None:
+    save(fig, name, out_dir)
 
 
-def figure_f5() -> None:
+def figure_f5(out_dir: Path = Path("figures")) -> None:
     abl = pd.read_csv("results/rules_ablation.csv")
     abl = abl[abl.group == "manifested"]
     per_run = pd.read_csv("results/costs_per_run.csv")
@@ -72,10 +70,10 @@ def figure_f5() -> None:
              "instead of the raw category (drop = what the lighter form costs). Bubble area = "
              "planted sensitive values per run.", fontsize=8, color=MUTED)  # fmt: skip
     fig.tight_layout()
-    _save(fig, "F5_value_vs_cost")
+    _save(fig, "F5_value_vs_cost", out_dir)
 
 
-def figure_f7() -> None:
+def figure_f7(out_dir: Path = Path("figures")) -> None:
     df = pd.read_csv("results/profile_candidates_manifested.csv")
     prof = __import__("json").loads(Path("results/profile.json").read_text())
     full = df[df.profile == FULL_NAME].iloc[0]
@@ -116,7 +114,7 @@ def figure_f7() -> None:
     fig.suptitle("F7  All 320 candidate profiles: size vs accuracy (rule checker, design)",
                  x=0.01, ha="left", color=INK, fontsize=11)  # fmt: skip
     fig.tight_layout()
-    _save(fig, "F7_profile_frontier")
+    _save(fig, "F7_profile_frontier", out_dir)
 
 
 def main() -> None:

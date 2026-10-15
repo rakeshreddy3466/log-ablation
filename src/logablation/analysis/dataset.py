@@ -157,10 +157,9 @@ def figure_f3(rates: pd.DataFrame, out_dir: Path) -> None:
     for s in ("top", "right"):
         ax.spines[s].set_visible(False)
     fig.tight_layout()
-    out_dir.mkdir(exist_ok=True)
-    for ext in ("png", "svg"):
-        fig.savefig(out_dir / f"F3_manifested_vs_masked.{ext}", bbox_inches="tight")
-    plt.close(fig)
+    from ..report.style import save
+
+    save(fig, "F3_manifested_vs_masked", out_dir)
 
 
 def main() -> None:

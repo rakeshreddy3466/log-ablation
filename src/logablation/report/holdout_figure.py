@@ -11,11 +11,13 @@ import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np  # noqa: E402
 import pandas as pd  # noqa: E402
 
+from .style import save  # noqa: E402
+
 INK, MUTED = "#1f2328", "#59636e"
 COL = {"full": "#2a6fbb", "profile": "#d98b2b", "skeleton": "#b8c1cc"}
 
 
-def main() -> None:
+def main(out_dir: Path = Path("figures")) -> None:
     df = pd.read_csv("results/holdout.csv")
     fig, axes = plt.subplots(1, 2, figsize=(10, 4.4), dpi=150, sharey=True)
     for ax, group in zip(axes, ("manifested", "masked"), strict=True):
@@ -45,9 +47,7 @@ def main() -> None:
     fig.text(0.01, -0.03, "Whiskers: 95% cluster-bootstrap CI over scenarios.", fontsize=8,
              color=MUTED)  # fmt: skip
     fig.tight_layout()
-    Path("figures").mkdir(exist_ok=True)
-    for ext in ("png", "svg"):
-        fig.savefig(f"figures/F9_holdout.{ext}", bbox_inches="tight")
+    save(fig, "F9_holdout", out_dir)
 
 
 if __name__ == "__main__":

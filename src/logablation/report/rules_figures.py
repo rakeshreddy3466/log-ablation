@@ -13,6 +13,7 @@ import pandas as pd  # noqa: E402
 
 from ..scenarios.taxonomy import VARIANTS  # noqa: E402
 from ..tracing.categories import ABLATABLE, CATEGORY_IDS  # noqa: E402
+from .style import save  # noqa: E402
 
 INK, MUTED = "#1f2328", "#59636e"
 BLUE, ORANGE = "#2a6fbb", "#d98b2b"
@@ -26,10 +27,7 @@ def _remove_one(df: pd.DataFrame, group: str, cat_id: str) -> pd.Series:
 
 
 def _save(fig: plt.Figure, out_dir: Path, name: str) -> None:
-    out_dir.mkdir(exist_ok=True)
-    for ext in ("png", "svg"):
-        fig.savefig(out_dir / f"{name}.{ext}", bbox_inches="tight")
-    plt.close(fig)
+    save(fig, name, out_dir)
 
 
 def figure_f4(df: pd.DataFrame, out_dir: Path) -> None:

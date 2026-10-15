@@ -190,7 +190,17 @@ def main() -> None:
         "full_planted_values_per_run": full.planted_per_run,
         "skeleton_accuracy": {"first_error": sk.first_error_acc, "root_cause": sk.root_cause_acc},
     }  # fmt: skip
-    Path("results/profile.json").write_text(json.dumps(profile, indent=1, default=float) + "\n")
+    target = Path("results/profile.json")
+    if target.exists():  # a frozen profile is never overwritten by a re-run
+        frozen = json.loads(target.read_text())
+        if frozen["profile"] != profile["profile"]:
+            raise SystemExit(
+                f"selection now gives {profile['profile']} but {target} is frozen as "
+                f"{frozen['profile']}; investigate before changing it"
+            )
+        print(f"{target} already frozen as {frozen['profile']}; left untouched")
+    else:
+        target.write_text(json.dumps(profile, indent=1, default=float) + "\n")
     stock.save()
     fixed.save()
     print(json.dumps(profile, indent=1, default=float))

@@ -1,0 +1,22 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - name: Install
+        run: uv sync --frozen
+      - name: Generate scenarios (seeded; needed by the fault tests)
+        run: uv run python -m logablation.scenarios --config configs/experiment.yaml
+      - name: Lint
+        run: |
+          uv run ruff check .
+          uv run ruff format --check .
+      - name: Tests (tests marked ollama are skipped: no server on CI)
+        run: uv run pytest -q
