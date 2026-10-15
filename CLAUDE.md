@@ -126,4 +126,5 @@ attribution/predictions.parquet, results/metrics.csv, results/costs.csv, results
 - Commit after each working milestone with a clear message. Never commit model weights or large raw data
   (runs/raw goes in .gitignore; commit results/ and figures/).
 - After writing each module, explain its design in plain English so the author can present it.
+- Commit messages contain no Co-Authored-By or AI attribution lines.
 - Never fabricate results. If something fails, report it as a result.
