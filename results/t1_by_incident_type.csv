@@ -1,0 +1,8 @@
+incident_type,clean_runs,eligible,faulted_runs,manifested,masked
+db_pool_exhausted,17,15,74,25,49
+bad_deploy,17,10,50,15,35
+memory_leak,17,7,38,20,18
+cross_zone_latency,17,0,0,0,0
+expired_certificate,16,7,33,18,15
+cache_eviction_storm,16,10,50,15,35
+ALL,100,49,245,93,152

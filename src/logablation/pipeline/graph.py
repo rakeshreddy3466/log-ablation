@@ -230,7 +230,7 @@ def run_pipeline(
     outcome = label_outcome(
         variant, root_cause_ok=rc_ok, action_ok=ac_ok, target_ok=tc_ok, twin_success=twin_success
     )
-    success = outcome in ("clean_success", "masked")
+    success = outcome_success(rc_ok, ac_ok, tc_ok)  # placebo runs too: False = answer flipped
     timings = {name: round(sec, 3) for name, sec in final.get("timings", [])}
     timings["total_s"] = round(total, 3)
     rec = RunRecord(
