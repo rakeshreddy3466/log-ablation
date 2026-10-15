@@ -1,0 +1,9 @@
+{
+ "note": "R2 logprob fallback (C4), design side only, 267 runs, 22 R2 runs. Feature: min over answer fields of mean_logprob of the reasoning step. Threshold maximises F1 of 'is R2'.",
+ "threshold": -0.675849,
+ "design_f1": 0.205,
+ "tp": 4, "fp": 13, "fn": 18,
+ "r2_median_feature": -0.035,
+ "other_median_feature": -0.089,
+ "finding": "R2 runs are not less confident at the sampled tokens than other runs (median -0.035 vs -0.089), so C4 carries almost no R2 signal; temperature > 0 is only visible in C3."
+}
