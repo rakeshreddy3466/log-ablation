@@ -193,7 +193,7 @@ class _Planter:
             return f"{first}.{r.randrange(256)}.{r.randrange(256)}.{r.randrange(1, 255)}"
         if kind == "api_key":
             alphabet = string.ascii_lowercase + string.digits
-            return "sk_live_" + "".join(r.choice(alphabet) for _ in range(24))
+            return "synth_key_" + "".join(r.choice(alphabet) for _ in range(24))
         return f"ORD-{r.randrange(10**7, 10**8)}"
 
     def render(self, template: str, source: str, index: int, field_name: str) -> str:

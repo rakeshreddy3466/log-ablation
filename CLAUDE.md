@@ -150,7 +150,11 @@ attribution/predictions.parquet, results/metrics.csv, results/costs.csv, results
 - Build in this order: scenarios -> tools -> agents/schemas -> pipeline -> faults -> tracer -> pilot (20 runs)
   -> full runs -> rule-based checker -> LLM judge -> ablation -> costs -> profile + holdout -> report.
 - Commit after each working milestone with a clear message. Never commit model weights or large raw data
-  (runs/raw goes in .gitignore; commit results/ and figures/).
+  (commit results/ and figures/).
+- Run records and traces contain planted sensitive values (emails, IPs, API keys, order ids), so
+  they are NEVER committed: runs/ is git-ignored entirely. Only redacted demos and aggregate
+  results go to git. Planted fake API keys use the prefix synth_key_ so that nothing in the repo
+  matches a real secret pattern (GitHub push protection once rejected a Stripe-style look-alike key).
 - After writing each module, explain its design in plain English so the author can present it.
 - Commit messages contain no Co-Authored-By or AI attribution lines.
 - Run pytest and check its exit code BEFORE committing; never pipe test output through tail in the

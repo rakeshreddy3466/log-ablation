@@ -151,7 +151,7 @@ def test_every_sensitive_type_planted_in_every_scenario(scenarios: list[Scenario
 
 def test_no_unrecorded_sensitive_values(scenarios: list[Scenario]) -> None:
     """Every api key / order id / email found by pattern must be in the planted record."""
-    pattern = re.compile(r"sk_live_[a-z0-9]{24}|ORD-\d{8}|[\w.]+@[\w.]+\.test")
+    pattern = re.compile(r"synth_key_[a-z0-9]{24}|ORD-\d{8}|[\w.]+@[\w.]+\.test")
     for sc in scenarios:
         recorded = {f.value for f in sc.sensitive_fields}
         texts = [a.message for a in sc.alerts] + [d.author for d in sc.deploys]

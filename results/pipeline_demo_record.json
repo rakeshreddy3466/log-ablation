@@ -41,12 +41,12 @@
       {
         "id": "f5",
         "source": "get_logs",
-        "value": "INFO message: login ok for eli.weber86@example.test from 113.102.28.126 in auth logs at 2025-03-10T09:44:48Z"
+        "value": "INFO message: login ok for <EMAIL-REDACTED> from <IP-REDACTED> in auth logs at 2025-03-10T09:44:48Z"
       },
       {
         "id": "f6",
         "source": "get_logs",
-        "value": "INFO message: login ok for jo.nguyen36@mailbox.test from 34.121.11.254 in auth logs at 2025-03-10T09:30:57Z"
+        "value": "INFO message: login ok for <EMAIL-REDACTED> from <IP-REDACTED> in auth logs at 2025-03-10T09:30:57Z"
       },
       {
         "id": "f7",
@@ -61,7 +61,7 @@
       {
         "id": "f9",
         "source": "get_logs",
-        "value": "INFO message: order ORD-88278651 created for chloe.rossi44@example.test total=$3982.99 in checkout logs at 2025-03-10T09:41:35Z"
+        "value": "INFO message: order <ORDER_ID-REDACTED> created for <EMAIL-REDACTED> total=$3982.99 in checkout logs at 2025-03-10T09:41:35Z"
       }
     ],
     "evidence_confidence": 0.8
@@ -116,12 +116,12 @@
           {
             "id": "f5",
             "source": "get_logs",
-            "value": "INFO message: login ok for eli.weber86@example.test from 113.102.28.126 in auth logs at 2025-03-10T09:44:48Z"
+            "value": "INFO message: login ok for <EMAIL-REDACTED> from <IP-REDACTED> in auth logs at 2025-03-10T09:44:48Z"
           },
           {
             "id": "f6",
             "source": "get_logs",
-            "value": "INFO message: login ok for jo.nguyen36@mailbox.test from 34.121.11.254 in auth logs at 2025-03-10T09:30:57Z"
+            "value": "INFO message: login ok for <EMAIL-REDACTED> from <IP-REDACTED> in auth logs at 2025-03-10T09:30:57Z"
           },
           {
             "id": "f7",
@@ -136,7 +136,7 @@
           {
             "id": "f9",
             "source": "get_logs",
-            "value": "INFO message: order ORD-88278651 created for chloe.rossi44@example.test total=$3982.99 in checkout logs at 2025-03-10T09:41:35Z"
+            "value": "INFO message: order <ORDER_ID-REDACTED> created for <EMAIL-REDACTED> total=$3982.99 in checkout logs at 2025-03-10T09:41:35Z"
           }
         ],
         "evidence_confidence": 0.8
@@ -172,12 +172,12 @@
           {
             "id": "f5",
             "source": "get_logs",
-            "value": "INFO message: login ok for eli.weber86@example.test from 113.102.28.126 in auth logs at 2025-03-10T09:44:48Z"
+            "value": "INFO message: login ok for <EMAIL-REDACTED> from <IP-REDACTED> in auth logs at 2025-03-10T09:44:48Z"
           },
           {
             "id": "f6",
             "source": "get_logs",
-            "value": "INFO message: login ok for jo.nguyen36@mailbox.test from 34.121.11.254 in auth logs at 2025-03-10T09:30:57Z"
+            "value": "INFO message: login ok for <EMAIL-REDACTED> from <IP-REDACTED> in auth logs at 2025-03-10T09:30:57Z"
           },
           {
             "id": "f7",
@@ -192,7 +192,7 @@
           {
             "id": "f9",
             "source": "get_logs",
-            "value": "INFO message: order ORD-88278651 created for chloe.rossi44@example.test total=$3982.99 in checkout logs at 2025-03-10T09:41:35Z"
+            "value": "INFO message: order <ORDER_ID-REDACTED> created for <EMAIL-REDACTED> total=$3982.99 in checkout logs at 2025-03-10T09:41:35Z"
           }
         ],
         "evidence_confidence": 0.8

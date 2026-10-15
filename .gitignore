@@ -1,5 +1,6 @@
-# raw run logs and large artefacts
-runs/raw/
+# ALL run records and traces: they contain planted sensitive values (emails, IPs, API keys,
+# order ids) and are never committed; only redacted demos and aggregate results go to git
+runs/
 # environments and caches
 .venv/
 __pycache__/
