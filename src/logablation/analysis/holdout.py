@@ -26,6 +26,8 @@ def accuracy_cis(pred: pd.DataFrame, names: dict[str, str], n_boot: int, seed: i
     rows = []
     for group in ("manifested", "masked"):
         g = pred[pred.group == group]
+        if g.empty:
+            continue
         scen = sorted(g.scenario_id.unique())
         pos = {s: i for i, s in enumerate(scen)}
         w = np.stack([np.bincount(rng.integers(0, len(scen), len(scen)), minlength=len(scen))
