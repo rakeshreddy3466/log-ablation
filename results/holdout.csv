@@ -1,0 +1,7 @@
+group,condition,profile,n_runs,n_scenarios,first_error_acc,first_error_lo,first_error_hi,root_cause_acc,root_cause_lo,root_cause_hi,first_error_drop,first_error_drop_lo,first_error_drop_hi,root_cause_drop,root_cause_drop_lo,root_cause_drop_hi,first_error_macro_f1,root_cause_macro_f1,unknown_rate,median_bytes_per_run,planted_values_per_run
+manifested,full,C1+C2+C3+C4+C5+C6,27,14,1.0,1.0,1.0,1.0,1.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0,1.0,0.0,48198.5,22.12037037037037
+manifested,profile,C2x+C3l+C6,27,14,1.0,1.0,1.0,1.0,1.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0,1.0,0.0,18939.0,2.388888888888889
+manifested,skeleton,skeleton,27,14,0.0,0.0,0.0,0.0,0.0,0.0,1.0,1.0,1.0,1.0,1.0,1.0,0.0,0.0,1.0,1354.0,0.0
+masked,full,C1+C2+C3+C4+C5+C6,44,14,0.9772727272727273,0.92852787456446,1.0,0.9772727272727273,0.92852787456446,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.9913793103448276,0.979591836734694,0.022727272727272728,48198.5,22.12037037037037
+masked,profile,C2x+C3l+C6,44,14,0.9772727272727273,0.92852787456446,1.0,0.9772727272727273,0.92852787456446,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.9913793103448276,0.979591836734694,0.022727272727272728,18939.0,2.388888888888889
+masked,skeleton,skeleton,44,14,0.0,0.0,0.0,0.0,0.0,0.0,0.9772727272727273,0.92852787456446,1.0,0.9772727272727273,0.92852787456446,1.0,0.0,0.0,1.0,1354.0,0.0

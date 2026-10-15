@@ -91,3 +91,22 @@ def test_apply_profile_substitutes_only_the_chosen_category() -> None:
     assert set(out[2]["payload"]) == {"template_id", "system_sha256", "options"}
     ch["C2"] = None
     assert [e["category"] for e in apply_profile(events, alt, ch)] == ["skeleton", "prompt_shown"]
+
+
+def test_holdout_accuracy_ci_on_tiny_frame() -> None:
+    import pandas as pd
+
+    from logablation.analysis.holdout import accuracy_cis
+
+    rows = []
+    for i in range(8):
+        for prof, ok in (("full", True), ("skeleton", i < 2)):
+            rows.append({"run_id": f"s{i}-E1", "scenario_id": f"s{i}", "group": "manifested",
+                         "profile": prof, "true_variant": "E1",
+                         "true_first_error": "evidence_agent",
+                         "pred_variant": "E1" if ok else "unknown",
+                         "pred_first_error": "evidence_agent" if ok else "unknown"})  # fmt: skip
+    ci = accuracy_cis(pd.DataFrame(rows), {"full": "full", "skeleton": "skeleton"}, 200, 1)
+    r = ci[(ci.group == "manifested") & (ci.condition == "skeleton")].iloc[0]
+    assert r.root_cause_acc == 0.25 and r.root_cause_lo <= 0.25 <= r.root_cause_hi
+    assert ci[(ci.condition == "full")].iloc[0].first_error_acc == 1.0

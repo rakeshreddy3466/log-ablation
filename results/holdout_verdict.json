@@ -1,0 +1,9 @@
+{
+ "profile": "C2x+C3l+C6",
+ "tolerance_points": 5.0,
+ "manifested": {
+  "first_error_drop": 0.0,
+  "root_cause_drop": 0.0
+ },
+ "passes": true
+}
