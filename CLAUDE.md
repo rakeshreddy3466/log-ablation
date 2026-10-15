@@ -50,7 +50,22 @@ Labels per failed run:
 - root_cause_variant: one of the eight variants
 Outcomes: manifested (fault + wrong answer; the attribution dataset), masked (fault + right answer),
 natural_failure (no fault + wrong answer; excluded from main metrics, counted), clean_success.
-Run mix target: 300 runs = 60 clean + 30 per variant. Adjust after a 20-run pilot.
+
+Paired design (counterfactual twins):
+- Every scenario first gets a clean run (no fault). Its outcome is clean_success or natural_failure.
+- Only scenarios whose clean run succeeded are eligible for fault injection. A scenario whose clean
+  run failed is never faulted (its failure is natural, so a fault could not be blamed for it).
+- Each faulted run stores `twin_run_id`, the run_id of its scenario's clean run.
+- Temperature is 0 and the seed is fixed, so the twin is the counterfactual: same scenario, same
+  model, same prompts, only the fault differs. Therefore manifested = faulted run fails while its
+  twin succeeded (the fault caused the failure); masked = faulted run still succeeds.
+- Exception R2 (unstable_sampling): it changes sampling on purpose, so the faulted run is one
+  stochastic draw, not a deterministic counterfactual. Its sampling seed is stored; R2 results are
+  labelled manifested/masked by the same rule but reported separately and read as a rate, not a cause.
+- Eligibility per incident type (clean successes / clean runs) is reported as a result
+  (results/eligibility.csv, shown in T1), because it limits how many faulted runs each type can supply.
+Run mix target: 60 clean runs and 30 faulted runs per variant, drawn from eligible scenarios; if a
+type has too few eligible scenarios, run fewer and report the shortfall. Adjust after a 20-run pilot.
 
 ## Logging
 Log everything in every run; ablate afterwards by filtering. Each event is one JSON line:
@@ -117,7 +132,7 @@ F6 category x variant recall-drop heatmap, F7 profile frontier (64 profiles), F8
 full vs profile, F9 holdout full/profile/skeleton with CIs. Save PNG and SVG.
 Tables: T1 dataset summary, T2 attribution results, T3 category costs, T4 minimum profile, T5 holdout.
 Files: data/scenarios/*.json, runs/raw/*.jsonl, runs/traces.parquet, runs/outcomes.parquet,
-attribution/predictions.parquet, results/metrics.csv, results/costs.csv, results/profile.json.
+attribution/predictions.parquet, results/metrics.csv, results/costs.csv, results/eligibility.csv, results/profile.json.
 
 ## Working rules
 - Python 3.11+, uv or venv, ruff, pytest. Type hints everywhere. Every random choice takes a seed.
