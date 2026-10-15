@@ -174,14 +174,23 @@ def run_faulted_phase(
     return new
 
 
-def write_eligibility(eligibility: dict[str, tuple[int, int]], path: Path) -> None:
+def write_eligibility(
+    eligibility: dict[str, tuple[int, int]],
+    path: Path,
+    planned_by_type: dict[str, int] | None = None,
+) -> None:
+    """results/eligibility.csv: per incident type, clean successes (= eligible scenarios), clean
+    runs, how many scenarios dropped out (ineligible = the shortfall) and planned faulted runs."""
     path.parent.mkdir(parents=True, exist_ok=True)
-    lines = ["incident_type,eligible,clean_runs,rate"]
+    planned = planned_by_type or {}
+    lines = ["incident_type,eligible,clean_runs,ineligible,rate,planned_faulted_runs"]
     for t, (ok, n) in eligibility.items():
-        lines.append(f"{t},{ok},{n},{ok / n:.3f}" if n else f"{t},0,0,")
+        rate = f"{ok / n:.3f}" if n else ""
+        lines.append(f"{t},{ok},{n},{n - ok},{rate},{planned.get(t, 0)}")
     tot_ok = sum(o for o, _ in eligibility.values())
     tot_n = sum(n for _, n in eligibility.values())
-    lines.append(f"ALL,{tot_ok},{tot_n},{tot_ok / tot_n:.3f}" if tot_n else "ALL,0,0,")
+    rate = f"{tot_ok / tot_n:.3f}" if tot_n else ""
+    lines.append(f"ALL,{tot_ok},{tot_n},{tot_n - tot_ok},{rate},{sum(planned.values())}")
     path.write_text("\n".join(lines) + "\n")
 
 
@@ -233,7 +242,13 @@ def main(argv: list[str] | None = None) -> None:
                 variants=tuple(mix["variants"]),
                 seed=mix["plan_seed"],
             )
-            write_eligibility(plan.eligibility, a.eligibility_out)
+            type_of = {r["scenario_id"]: r["incident_type"] for r in clean}
+            planned_by_type: dict[str, int] = {}
+            for pr in plan.runs:
+                t = type_of[pr.scenario_id]
+                planned_by_type[t] = planned_by_type.get(t, 0) + 1
+            write_eligibility(plan.eligibility, a.eligibility_out, planned_by_type)
+            print(f"planned faulted runs per incident type: {planned_by_type}")
             print(f"eligibility (clean successes / clean runs): {plan.eligibility}")
             print(f"planned {len(plan.runs)} faulted runs; shortfall per variant: {plan.shortfall}")
             runs = plan.runs

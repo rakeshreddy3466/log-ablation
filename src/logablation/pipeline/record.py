@@ -6,7 +6,9 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
-Outcome = Literal["clean_success", "natural_failure", "manifested", "masked"]
+from ..scenarios.taxonomy import PLACEBO
+
+Outcome = Literal["clean_success", "natural_failure", "manifested", "masked", "placebo"]
 STEPS = ("evidence_agent", "handover_1", "reasoning_agent", "handover_2", "action_agent")
 
 
@@ -77,6 +79,7 @@ def label_outcome(
     """Deterministic outcome label.
 
     clean run: clean_success / natural_failure.
+    placebo run (variant P0): always "placebo"; whether it flipped is `success` (False = flipped).
     faulted run: manifested (fails; its twin succeeded) / masked (still succeeds). A faulted run
     whose twin did not succeed is ineligible by design and is an error, never silently labelled.
     """
@@ -85,4 +88,6 @@ def label_outcome(
         return "clean_success" if success else "natural_failure"
     if twin_success is not True:
         raise ValueError("a faulted run needs a twin that succeeded (ineligible scenario)")
+    if variant == PLACEBO:
+        return "placebo"
     return "masked" if success else "manifested"

@@ -69,6 +69,10 @@ DB_MAX_CONNECTIONS = 100
 # Fault variants and their ground-truth labels (where the fault is injected = where the first
 # error occurs). Kept here so the pipeline, faults and analysis share one definition.
 VARIANTS: tuple[str, ...] = ("E1", "E2", "E3", "R1", "R2", "I1", "I2", "I3")
+# P0 is a placebo, not a fault: a meaningless change used to measure how often the answer flips
+# without any real fault. It has no first_error_step and is excluded from attribution.
+PLACEBO = "P0"
+RUN_VARIANTS: tuple[str, ...] = (*VARIANTS, PLACEBO)
 VARIANT_NAMES: dict[str, str] = {
     "E1": "stale_window",
     "E2": "wrong_service",
@@ -78,6 +82,7 @@ VARIANT_NAMES: dict[str, str] = {
     "I1": "dropped_field",
     "I2": "truncated_findings",
     "I3": "dropped_target",
+    PLACEBO: "placebo_healthz_line",
 }
 FIRST_ERROR_STEP: dict[str, str] = {
     "E1": "evidence_agent",

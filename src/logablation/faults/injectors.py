@@ -14,9 +14,9 @@ from typing import Any
 
 from ..pipeline.hooks import PipelineHooks
 from ..scenarios.models import Scenario
-from ..scenarios.taxonomy import INCIDENT_TYPES, VARIANTS
+from ..scenarios.taxonomy import INCIDENT_TYPES, PLACEBO, VARIANTS
 from ..tools.mock_apis import TOOLS
-from ..tools.timeutil import shift
+from ..tools.timeutil import fmt, parse, shift
 
 STALE_SHIFT_MIN = -30
 R2_TEMPERATURE = 1.3
@@ -122,6 +122,46 @@ def i3_dropped_target(scenario: Scenario, run_seed: int) -> PipelineHooks:
     return PipelineHooks(handover_2=hook)
 
 
+HEALTHZ_MESSAGE = "GET /healthz 200 1ms"
+
+
+def placebo_service(scenario: Scenario, run_seed: int) -> str | None:
+    """A service that is neither the root cause nor the symptom and whose logs the evidence
+    agent's fixed plan actually reads (so the placebo can be seen). None when there is none."""
+    from ..agents.agents import plan_services
+    from ..tools import ToolContext, build_ticket
+
+    ticket = build_ticket(scenario)
+    topo = ToolContext(scenario).get_topology()
+    gt = scenario.ground_truth
+    cands = [
+        s
+        for s in plan_services(ticket, topo)
+        if s not in (gt.root_cause_service, gt.symptom_service)
+    ]
+    return random.Random(run_seed).choice(sorted(cands)) if cands else None
+
+
+def p0_placebo(scenario: Scenario, run_seed: int) -> PipelineHooks:
+    """Adds one routine INFO line to get_logs for one bystander service. Nothing else changes."""
+    target = placebo_service(scenario, run_seed)
+
+    def transform(tool: str, args: dict[str, Any], result: Any) -> Any:
+        if tool != "get_logs" or target is None or args.get("service") != target:
+            return result
+        if not isinstance(result, dict) or "lines" not in result:
+            return result
+        lvl = args.get("level")
+        if lvl is not None and str(lvl).upper() != "INFO":
+            return result  # a level filter that excludes INFO would not show the line
+        start, end = parse(args["start"]), parse(args["end"])
+        line = {"time": fmt(start + (end - start) / 2), "level": "INFO", "message": HEALTHZ_MESSAGE}
+        lines = sorted([*result["lines"], line], key=lambda ln: parse(ln["time"]))
+        return {**result, "total_matching": result["total_matching"] + 1, "lines": lines}
+
+    return PipelineHooks(tool_transform=transform)
+
+
 FAULTS = {
     "E1": e1_stale_window,
     "E2": e2_wrong_service,
@@ -131,8 +171,9 @@ FAULTS = {
     "I1": i1_dropped_field,
     "I2": i2_truncated_findings,
     "I3": i3_dropped_target,
+    PLACEBO: p0_placebo,
 }
-assert tuple(FAULTS) == VARIANTS
+assert tuple(FAULTS) == (*VARIANTS, PLACEBO)
 
 
 def build_hooks(variant: str | None, scenario: Scenario, run_seed: int) -> PipelineHooks:
@@ -142,14 +183,15 @@ def build_hooks(variant: str | None, scenario: Scenario, run_seed: int) -> Pipel
     return FAULTS[variant](scenario, run_seed)
 
 
-TOOL_FAULTS = ("E1", "E2", "E3")
+TOOL_FAULTS = ("E1", "E2", "E3", PLACEBO)
 
 
 def fault_applies(variant: str, scenario: Scenario, run_seed: int) -> bool:
     """False when the fault would change nothing for this scenario (so it is not a fault).
 
     Tool faults are checked exactly: the evidence agent's fixed tool plan is replayed with and
-    without the transform and the results compared. (E3 is a no-op where the decisive alert is
+    without the transform and the results compared. (P0 is a no-op when no bystander service is
+    read. E3 is a no-op where the decisive alert is
     outside the ticket window; this happens for slow memory leaks.) Reasoning and interface
     faults always change their input.
     """

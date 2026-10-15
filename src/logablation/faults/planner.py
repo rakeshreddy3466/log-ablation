@@ -14,7 +14,7 @@ from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
 from typing import Any
 
-from ..scenarios.taxonomy import INCIDENT_TYPES, VARIANTS
+from ..scenarios.taxonomy import INCIDENT_TYPES, RUN_VARIANTS
 
 
 @dataclass(frozen=True)
@@ -40,7 +40,7 @@ def plan_faulted(
     clean_records: Iterable[dict[str, Any]],
     *,
     per_variant: int,
-    variants: tuple[str, ...] = VARIANTS,
+    variants: tuple[str, ...] = RUN_VARIANTS,
     seed: int,
     applicable: Callable[[str, str], bool] = lambda scenario_id, variant: True,
 ) -> FaultPlan:

@@ -21,6 +21,8 @@ from logablation.scenarios.models import Scenario
 from logablation.scenarios.taxonomy import (
     FIRST_ERROR_STEP,
     INCIDENT_TYPES,
+    PLACEBO,
+    RUN_VARIANTS,
     VARIANTS,
 )
 from logablation.tools import ToolContext, build_ticket
@@ -251,15 +253,15 @@ def test_planner_uses_only_eligible_scenarios_and_balances_variants() -> None:
     ok = {r["scenario_id"] for r in clean if r["success"]}
     assert len(ok) == 48
     assert {p.scenario_id for p in plan.runs} <= ok  # never an ineligible scenario
-    counts = {v: sum(p.variant == v for p in plan.runs) for v in VARIANTS}
+    counts = {v: sum(p.variant == v for p in plan.runs) for v in RUN_VARIANTS}
     assert set(counts.values()) == {30} and plan.shortfall == {}
     keys = [(p.scenario_id, p.variant) for p in plan.runs]
     assert len(keys) == len(set(keys))  # no scenario gets the same variant twice
-    assert len({p.run_id for p in plan.runs}) == 240
+    assert len({p.run_id for p in plan.runs}) == 270  # 8 faults + the P0 placebo, 30 each
     twin = {r["scenario_id"]: r["run_id"] for r in clean}
     assert all(p.twin_run_id == twin[p.scenario_id] for p in plan.runs)
     load = [sum(p.scenario_id == s for p in plan.runs) for s in ok]
-    assert max(load) - min(load) <= 1  # scenarios share the 240 runs evenly (5 each)
+    assert max(load) - min(load) <= 1  # scenarios share the 270 runs evenly (5 or 6 each)
 
 
 def test_planner_is_deterministic_and_seed_sensitive() -> None:
@@ -272,8 +274,8 @@ def test_planner_is_deterministic_and_seed_sensitive() -> None:
 def test_planner_reports_shortfall_and_eligibility() -> None:
     clean = _clean(12)  # i = 0, 5, 10 fail -> 9 eligible
     plan = plan_faulted(clean, per_variant=30, seed=11)
-    assert plan.shortfall == dict.fromkeys(VARIANTS, 21)  # no repeats -> at most 9 per variant
-    assert len(plan.runs) == 72
+    assert plan.shortfall == dict.fromkeys(RUN_VARIANTS, 21)  # no repeats -> at most 9 per variant
+    assert len(plan.runs) == 81
     assert sum(ok for ok, _ in plan.eligibility.values()) == 9
     assert sum(n for _, n in plan.eligibility.values()) == 12
     assert plan_faulted([], per_variant=3, seed=1).runs == []
@@ -309,3 +311,76 @@ def test_planner_never_assigns_an_inapplicable_pair() -> None:
     plan = plan_faulted(clean, per_variant=10, seed=3, applicable=lambda s, v: (s, v) not in banned)
     assert not {(p.scenario_id, p.variant) for p in plan.runs} & banned
     assert sum(p.variant == "E3" for p in plan.runs) == 10
+
+
+# ---- P0 placebo --------------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize("seed", SEEDS)
+def test_p0_changes_exactly_one_log_list_by_one_info_line(seed: int) -> None:
+    sc = generate_scenario(seed)
+    gt = sc.ground_truth
+    diffs = []
+    for base, f in _pair(sc, PLACEBO):
+        if base["result"] == f["result"]:
+            continue
+        diffs.append((base, f))
+    assert len(diffs) == 1  # one tool call differs, nothing else
+    base, f = diffs[0]
+    assert base["tool"] == f["tool"] == "get_logs"
+    svc = base["args"]["service"]
+    assert svc not in (gt.root_cause_service, gt.symptom_service)
+    b, a = base["result"], f["result"]
+    assert set(a) == set(b) and a["service"] == b["service"] == svc
+    assert a["total_matching"] == b["total_matching"] + 1 and a["truncated"] == b["truncated"]
+    added = [ln for ln in a["lines"] if ln not in b["lines"]]
+    assert added == [{"time": added[0]["time"], "level": "INFO", "message": "GET /healthz 200 1ms"}]
+    assert [ln for ln in a["lines"] if ln in b["lines"]] == b["lines"]  # old lines intact, in order
+    assert len(a["lines"]) == len(b["lines"]) + 1
+    times = [ln["time"] for ln in a["lines"]]
+    assert times == sorted(times)
+
+
+def test_p0_uses_only_the_tool_transform_and_is_seeded() -> None:
+    sc = generate_scenario(1002)
+    h, d = build_hooks(PLACEBO, sc, 5), PipelineHooks()
+    assert {f for f in vars(d) if getattr(h, f) is not getattr(d, f)} == {"tool_transform"}
+    a = [c["args"]["service"] for c, g in _pair(sc, PLACEBO) if c["result"] != g["result"]]
+    b = [c["args"]["service"] for c, g in _pair(sc, PLACEBO) if c["result"] != g["result"]]
+    assert a == b
+
+
+def test_p0_is_labelled_placebo_and_has_no_fault_label() -> None:
+    from logablation.pipeline import label_outcome
+
+    assert PLACEBO not in FIRST_ERROR_STEP and PLACEBO not in VARIANTS
+    for ok in (True, False):  # flipped or not, a placebo run is never manifested/masked
+        assert (
+            label_outcome(PLACEBO, root_cause_ok=ok, action_ok=ok, target_ok=ok, twin_success=True)
+            == "placebo"
+        )
+    sc = generate_scenario(1002)
+    wrong = RoutedLLM("memory_leak" if sc.incident_type != "memory_leak" else "bad_deploy", "x")
+    rec = run_pipeline(
+        sc,
+        wrong,
+        run_id="p",
+        variant=PLACEBO,
+        twin_run_id="t",
+        twin_success=True,
+        hooks=build_hooks(PLACEBO, sc, 5),
+    )
+    assert rec.outcome == "placebo" and not rec.success  # success=False means it flipped
+    assert rec.first_error_step is None and rec.root_cause_variant is None
+
+
+def test_plan_clean_100_keeps_the_pilot_scenarios() -> None:
+    from pathlib import Path
+
+    from logablation.pipeline import plan_clean
+
+    d = Path("data/scenarios")
+    if not d.exists():
+        pytest.skip("scenarios not generated")
+    pilot, full = plan_clean(d, 12, 1100), plan_clean(d, 100, 1100)
+    assert set(pilot) <= set(full) and len(set(full)) == 100

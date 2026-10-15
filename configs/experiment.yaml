@@ -4,10 +4,10 @@ scenarios:
   count: 300             # 50 per incident type (types cycle by seed)
   out_dir: data/scenarios
 
-run_mix:                 # 300 runs = 60 clean + 30 per variant; adjust after the 20-run pilot
-  clean: 60
+run_mix:                 # 100 clean, then 30 faulted runs per variant incl. the P0 placebo
+  clean: 100
   per_variant: 30
-  variants: [E1, E2, E3, R1, R2, I1, I2, I3]
+  variants: [E1, E2, E3, R1, R2, I1, I2, I3, P0]
   pilot_runs: 20
   plan_seed: 11          # seeds the faulted-phase planner and every fault (via run id)
   first_seed: 1100       # clean phase takes the lowest seeds >= this, balanced over incident types

@@ -46,12 +46,14 @@ Evidence agent -> Handover 1 -> Reasoning agent -> Handover 2 -> Action agent
 | I1 dropped_field | interface | handover 1 | time_window or affected_service removed |
 | I2 truncated_findings | interface | handover 1 | only first two findings passed on |
 | I3 dropped_target | interface | handover 2 | suspected_service removed |
+| P0 placebo | none | tool layer | one routine INFO line ("GET /healthz 200 1ms") added to get_logs of a bystander service |
 
 Labels per failed run:
 - first_error_step: evidence_agent | handover_1 | reasoning_agent | handover_2 | action_agent
 - root_cause_variant: one of the eight variants
 Outcomes: manifested (fault + wrong answer; the attribution dataset), masked (fault + right answer),
-natural_failure (no fault + wrong answer; excluded from main metrics, counted), clean_success.
+natural_failure (no fault + wrong answer; excluded from main metrics, counted), clean_success,
+placebo (P0; excluded from attribution, used for the baseline flip rate).
 
 Paired design (counterfactual twins):
 - Every scenario first gets a clean run (no fault). Its outcome is clean_success or natural_failure.
@@ -70,9 +72,17 @@ Paired design (counterfactual twins):
   the ticket window: 26 of 300 scenarios), never counted as masked.
 - Eligibility per incident type (clean successes / clean runs) is reported as a result
   (results/eligibility.csv, shown in T1), because it limits how many faulted runs each type can supply.
-Run mix target: about 60 clean runs (one per scenario), then about 240 faulted runs spread over the
-eligible scenarios with balanced variants (about 30 per variant). If a type has too few eligible
-scenarios, run fewer and report the shortfall. Adjust after a 20-run pilot.
+Run mix: 100 clean runs (one per scenario; the 12 pilot runs are the first 12), then 30 runs per
+variant (8 faults + the P0 placebo) spread over the eligible scenarios. If a type has too few
+eligible scenarios, run fewer and report the shortfall (results/eligibility.csv, per incident type).
+The 20-run pilot (results/pilot_summary.txt) is the baseline; baseline v1 is history only. Prompts
+stay frozen at v1 (cd47821). A clean run that acts on the wrong service is a natural_failure.
+
+Placebo P0: adds one routine log line to get_logs of a service that is neither the root cause nor
+the symptom service (seeded; applied to eligible scenarios like the other variants). Its runs are
+labelled `placebo`, are NOT part of the attribution dataset (there is no fault to find), and are
+used only as the baseline flip rate: the share of eligible scenarios whose answer changes under a
+meaningless change. A fault's manifested rate is read against that rate, not against zero.
 Because runs are grouped by scenario, every confidence interval resamples whole scenarios (cluster
 bootstrap), and the design/holdout split is by scenario (all runs of a scenario on the same side).
 
@@ -101,7 +111,9 @@ The outcome check is never traced (a verdict is a label, not log content).
 
 ## Cost and privacy
 - Size: bytes per run per category, raw and gzip; median and p95.
-- Latency: 30 clean scenarios with logging off, all on, and one category on at a time.
+- Latency: 30 clean scenarios with logging off, all on, and one category on at a time. Cold cache
+  (unload the model between runs) and randomised run order, because Ollama reuses its prompt cache
+  for identical prompts (seen in the pilot) and would otherwise make later conditions look faster.
 - Sensitive exposure: Microsoft Presidio (+ custom recognizers for API keys and order IDs); report % of
   events and entities per run, and Presidio recall against the planted ground truth.
 - Redaction test: C2 and C3 also scored in masked form.
