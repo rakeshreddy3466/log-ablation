@@ -64,3 +64,28 @@ MEMORY_LIMIT_MB: dict[str, int] = {
 }
 DB_POOL_MAX = 50
 DB_MAX_CONNECTIONS = 100
+
+
+# Fault variants and their ground-truth labels (where the fault is injected = where the first
+# error occurs). Kept here so the pipeline, faults and analysis share one definition.
+VARIANTS: tuple[str, ...] = ("E1", "E2", "E3", "R1", "R2", "I1", "I2", "I3")
+VARIANT_NAMES: dict[str, str] = {
+    "E1": "stale_window",
+    "E2": "wrong_service",
+    "E3": "missing_alert",
+    "R1": "misleading_prior",
+    "R2": "unstable_sampling",
+    "I1": "dropped_field",
+    "I2": "truncated_findings",
+    "I3": "dropped_target",
+}
+FIRST_ERROR_STEP: dict[str, str] = {
+    "E1": "evidence_agent",
+    "E2": "evidence_agent",
+    "E3": "evidence_agent",
+    "R1": "reasoning_agent",
+    "R2": "reasoning_agent",
+    "I1": "handover_1",
+    "I2": "handover_1",
+    "I3": "handover_2",
+}

@@ -32,7 +32,9 @@ Evidence agent -> Handover 1 -> Reasoning agent -> Handover 2 -> Action agent
   Diagnosis: root_cause (one of six), suspected_service, reasoning_summary, confidence, evidence_used[ids]
   ActionPlan: action (one of six), target_service, justification, confidence
 - Handovers are explicit graph nodes (not hidden state), so faults can be injected and state logged there.
-- Outcome check (deterministic): success only if final root_cause AND action match ground truth.
+- Outcome check (deterministic): success only if final root_cause AND action AND target_service
+  (ActionPlan.target_service == ground_truth.action_target) all match ground truth. Acting on the
+  wrong service is a failure; without the target check I3 (dropped target) could never manifest.
 
 ## Fault injection (at most one per run, via hooks; agent code never changes)
 | Variant | Class | Injected at | Effect |
@@ -63,6 +65,9 @@ Paired design (counterfactual twins):
   succeeded, so a failure under high temperature is caused by the fault (first_error_step =
   reasoning_agent). Only note that R2's masking rate comes from single random draws.
 - One eligible scenario can host several fault variants; all of them share the same clean twin.
+- A fault must change something. A (scenario, variant) pair where the fault would be a no-op is
+  skipped by the planner and reported (e.g. E3 on slow memory leaks whose decisive alert is outside
+  the ticket window: 26 of 300 scenarios), never counted as masked.
 - Eligibility per incident type (clean successes / clean runs) is reported as a result
   (results/eligibility.csv, shown in T1), because it limits how many faulted runs each type can supply.
 Run mix target: about 60 clean runs (one per scenario), then about 240 faulted runs spread over the

@@ -47,7 +47,10 @@ class RunRecord(BaseModel):
     failed_step: str | None = None  # first agent that produced no valid output, if any
     root_cause_correct: bool = False
     action_correct: bool = False
-    success: bool = False
+    target_correct: bool = False  # ActionPlan.target_service == ground_truth.action_target
+    success: bool = False  # all three of the above
+    first_error_step: str | None = None  # label, manifested runs only
+    root_cause_variant: str | None = None  # label, manifested runs only
     outcome: Outcome | None = None
     timings: dict[str, float] = Field(default_factory=dict)  # step -> seconds, plus total_s
     started_at: str = ""
@@ -58,13 +61,26 @@ class RunRecord(BaseModel):
         return bool(self.foreign_models)
 
 
-def label_outcome(variant: str | None, success: bool, twin_success: bool | None = None) -> Outcome:
+def outcome_success(root_cause_ok: bool, action_ok: bool, target_ok: bool) -> bool:
+    """A run succeeds only if root cause, action AND target service all match ground truth."""
+    return root_cause_ok and action_ok and target_ok
+
+
+def label_outcome(
+    variant: str | None,
+    *,
+    root_cause_ok: bool,
+    action_ok: bool,
+    target_ok: bool,
+    twin_success: bool | None = None,
+) -> Outcome:
     """Deterministic outcome label.
 
     clean run: clean_success / natural_failure.
     faulted run: manifested (fails; its twin succeeded) / masked (still succeeds). A faulted run
     whose twin did not succeed is ineligible by design and is an error, never silently labelled.
     """
+    success = outcome_success(root_cause_ok, action_ok, target_ok)
     if variant is None:
         return "clean_success" if success else "natural_failure"
     if twin_success is not True:

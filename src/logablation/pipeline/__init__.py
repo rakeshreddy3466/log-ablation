@@ -1,8 +1,14 @@
 from .diff import field_diff
 from .graph import build_graph, run_pipeline
 from .hooks import Event, HookedLLM, PipelineHooks
-from .record import HandoverRecord, RunRecord, StepRecord, label_outcome
-from .runner import clean_run_id, finished_run_ids, plan_clean, run_clean_phase
+from .record import HandoverRecord, RunRecord, StepRecord, label_outcome, outcome_success
+from .runner import (
+    clean_run_id,
+    finished_run_ids,
+    plan_clean,
+    run_clean_phase,
+    run_faulted_phase,
+)
 
 __all__ = [
     "Event",
@@ -17,6 +23,8 @@ __all__ = [
     "finished_run_ids",
     "label_outcome",
     "plan_clean",
+    "outcome_success",
     "run_clean_phase",
+    "run_faulted_phase",
     "run_pipeline",
 ]

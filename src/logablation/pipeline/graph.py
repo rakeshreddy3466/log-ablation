@@ -28,10 +28,11 @@ from ..agents import (
 from ..agents.agents import AgentResult
 from ..agents.llm import NUM_CTX
 from ..scenarios.models import Scenario
+from ..scenarios.taxonomy import FIRST_ERROR_STEP
 from ..tools import ToolContext, build_ticket
 from .diff import field_diff
 from .hooks import Event, HookedLLM, PipelineHooks, now
-from .record import HandoverRecord, RunRecord, StepRecord, label_outcome
+from .record import HandoverRecord, RunRecord, StepRecord, label_outcome, outcome_success
 
 
 class State(TypedDict, total=False):
@@ -47,6 +48,7 @@ class State(TypedDict, total=False):
     failed_step: str | None
     root_cause_correct: bool
     action_correct: bool
+    target_correct: bool
     success: bool
 
 
@@ -141,8 +143,10 @@ def build_graph(
         dg, ap = state.get("diagnosis"), state.get("action_plan")
         rc = bool(dg) and dg["root_cause"] == truth.root_cause  # type: ignore[index]
         ac = bool(ap) and ap["action"] == truth.correct_action  # type: ignore[index]
-        emit("outcome_check", "end", success=rc and ac)
-        return {"root_cause_correct": rc, "action_correct": ac, "success": rc and ac}
+        tc = bool(ap) and ap["target_service"] == truth.action_target  # type: ignore[index]
+        ok = outcome_success(rc, ac, tc)
+        emit("outcome_check", "end", success=ok)
+        return {"root_cause_correct": rc, "action_correct": ac, "target_correct": tc, "success": ok}
 
     def route(next_node: str) -> Callable[[State], str]:
         return lambda state: "outcome_check" if state.get("halted") else next_node
@@ -211,7 +215,13 @@ def run_pipeline(
         {"handovers": [], "steps": [], "timings": []}
     )
     total = time.perf_counter() - t0
-    success = bool(final.get("success"))
+    rc_ok = bool(final.get("root_cause_correct"))
+    ac_ok = bool(final.get("action_correct"))
+    tc_ok = bool(final.get("target_correct"))
+    outcome = label_outcome(
+        variant, root_cause_ok=rc_ok, action_ok=ac_ok, target_ok=tc_ok, twin_success=twin_success
+    )
+    success = outcome in ("clean_success", "masked")
     timings = {name: round(sec, 3) for name, sec in final.get("timings", [])}
     timings["total_s"] = round(total, 3)
     rec = RunRecord(
@@ -232,10 +242,13 @@ def run_pipeline(
         handovers=final.get("handovers", []),
         steps=final.get("steps", []),
         failed_step=final.get("failed_step"),
-        root_cause_correct=bool(final.get("root_cause_correct")),
-        action_correct=bool(final.get("action_correct")),
+        root_cause_correct=rc_ok,
+        action_correct=ac_ok,
+        target_correct=tc_ok,
         success=success,
-        outcome=label_outcome(variant, success, twin_success),
+        outcome=outcome,
+        first_error_step=FIRST_ERROR_STEP[variant] if outcome == "manifested" else None,  # type: ignore[index]
+        root_cause_variant=variant if outcome == "manifested" else None,
         timings=timings,
         started_at=started,
     )

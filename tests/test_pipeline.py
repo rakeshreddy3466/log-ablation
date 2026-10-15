@@ -32,6 +32,7 @@ class RoutedLLM:
 
     root_cause: str
     action: str
+    target: str = "checkout"
     model: str = "fake"
     calls: list[tuple[str, str, str, float | None, int | None]] = field(default_factory=list)
 
@@ -66,7 +67,7 @@ class RoutedLLM:
         else:
             body = {
                 "action": self.action,
-                "target_service": "checkout",
+                "target_service": self.target,
                 "justification": "do it",
                 "confidence": 0.8,
             }
@@ -83,12 +84,14 @@ class RoutedLLM:
 
 
 def _right(sc: Scenario) -> RoutedLLM:
-    return RoutedLLM(sc.ground_truth.root_cause, sc.ground_truth.correct_action)
+    g = sc.ground_truth
+    return RoutedLLM(g.root_cause, g.correct_action, g.action_target)
 
 
 def _wrong_rc(sc: Scenario) -> RoutedLLM:
     other = next(t for t in INCIDENT_TYPES if t != sc.ground_truth.root_cause)
-    return RoutedLLM(other, sc.ground_truth.correct_action)
+    g = sc.ground_truth
+    return RoutedLLM(other, g.correct_action, g.action_target)
 
 
 # ---- graph end to end ------------------------------------------------------------------------
@@ -122,7 +125,7 @@ def test_wrong_answer_is_natural_failure_and_flags_which_part() -> None:
     sc = generate_scenario(1002)
     rec = run_pipeline(sc, _wrong_rc(sc), run_id="r2")
     assert not rec.success and rec.outcome == "natural_failure"
-    assert not rec.root_cause_correct and rec.action_correct
+    assert not rec.root_cause_correct and rec.action_correct and rec.target_correct
 
 
 def test_agent_failure_halts_the_graph_and_is_recorded() -> None:
@@ -227,25 +230,38 @@ def test_field_diff_identity_and_each_op() -> None:
 
 
 @pytest.mark.parametrize(
-    ("variant", "success", "twin", "expected"),
+    ("variant", "rc", "ac", "tc", "twin", "expected"),
     [
-        (None, True, None, "clean_success"),
-        (None, False, None, "natural_failure"),
-        ("E1", False, True, "manifested"),
-        ("E1", True, True, "masked"),
-        ("R2", False, True, "manifested"),  # R2 is labelled like every other variant
+        (None, True, True, True, None, "clean_success"),
+        (None, False, True, True, None, "natural_failure"),
+        (None, True, True, False, None, "natural_failure"),  # wrong target service is a failure
+        ("E1", False, True, True, True, "manifested"),
+        ("E1", True, True, True, True, "masked"),
+        ("I3", True, True, False, True, "manifested"),  # dropped target -> wrong service
+        ("R2", False, False, False, True, "manifested"),  # R2 is labelled like every variant
     ],
 )
 def test_label_outcome(
-    variant: str | None, success: bool, twin: bool | None, expected: str
+    variant: str | None, rc: bool, ac: bool, tc: bool, twin: bool | None, expected: str
 ) -> None:
-    assert label_outcome(variant, success, twin) == expected
+    got = label_outcome(variant, root_cause_ok=rc, action_ok=ac, target_ok=tc, twin_success=twin)
+    assert got == expected
 
 
 @pytest.mark.parametrize("twin", [None, False])
 def test_faulted_run_without_a_successful_twin_is_an_error(twin: bool | None) -> None:
     with pytest.raises(ValueError):
-        label_outcome("E2", True, twin)
+        label_outcome("E2", root_cause_ok=True, action_ok=True, target_ok=True, twin_success=twin)
+
+
+def test_wrong_target_service_fails_the_run() -> None:
+    sc = generate_scenario(1002)
+    g = sc.ground_truth
+    other = next(s for s in ("auth", "catalog", "cache") if s != g.action_target)
+    llm = RoutedLLM(g.root_cause, g.correct_action, other)
+    rec = run_pipeline(sc, llm, run_id="t1")
+    assert rec.root_cause_correct and rec.action_correct and not rec.target_correct
+    assert not rec.success and rec.outcome == "natural_failure"
 
 
 def test_faulted_record_carries_twin_id_and_label() -> None:

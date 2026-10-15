@@ -1,4 +1,5 @@
-"""`make run`: plan the runs, skip finished ones, run the rest, append one JSON line per run.
+"""`make run`: phase 1 = one clean run per scenario, phase 2 = faulted runs planned from the clean
+results. Skips finished runs, appends one JSON line per run.
 
 Resumable by construction: run ids are deterministic ("<scenario_id>-clean"), the output file is
 append-only and flushed after every run, so a crash loses at most the run in progress.
@@ -70,6 +71,20 @@ def _terminate_torn_line(path: Path) -> None:
             fh.write("\n")
 
 
+def _append(out: Path, rec: RunRecord) -> None:
+    with out.open("a") as fh:
+        fh.write(rec.model_dump_json() + "\n")
+        fh.flush()
+
+
+def _say(rec: RunRecord, log: Callable[[str], None]) -> None:
+    flag = f" CONTAMINATED {rec.foreign_models}" if rec.contaminated else ""
+    log(
+        f"{rec.run_id} {rec.incident_type:<22} {rec.outcome:<15} "
+        f"{rec.timings['total_s']:.0f}s failed_step={rec.failed_step}{flag}"
+    )
+
+
 def run_clean_phase(
     scenario_ids: list[str],
     llm: LLMClient,
@@ -93,45 +108,134 @@ def run_clean_phase(
         sc = Scenario.model_validate_json((scen_dir / f"{sid}.json").read_text())
         rec = run_pipeline(sc, llm, run_id=rid, hooks=hooks)
         rec.foreign_models = check_foreign()
-        with out.open("a") as fh:
-            fh.write(rec.model_dump_json() + "\n")
-            fh.flush()
+        _append(out, rec)
         new.append(rec)
-        flag = f" CONTAMINATED {rec.foreign_models}" if rec.contaminated else ""
-        log(
-            f"{rid} {rec.incident_type:<22} {rec.outcome:<15} "
-            f"{rec.timings['total_s']:.0f}s failed_step={rec.failed_step}{flag}"
-        )
+        _say(rec, log)
     return new
 
 
+def read_records(path: Path) -> list[dict[str, Any]]:
+    out = []
+    for line in path.read_text().splitlines() if path.exists() else []:
+        try:
+            out.append(json.loads(line))
+        except json.JSONDecodeError:
+            continue
+    return out
+
+
+def run_faulted_phase(
+    plan: list[Any],
+    llm: LLMClient,
+    out: Path,
+    *,
+    plan_seed: int,
+    scen_dir: Path = SCEN_DIR,
+    check_foreign: Callable[[], list[str]] = lambda: [],
+    log: Callable[[str], None] = print,
+) -> list[RunRecord]:
+    """Run (or skip, if finished) each planned faulted run, attaching its clean twin's id.
+
+    The twin is eligible by construction (the planner only uses successful clean runs); the
+    outcome label is computed against it. Each fault's seed is derived from (plan_seed, run_id).
+    """
+    from ..faults import build_hooks, derive_seed  # lazy: faults imports pipeline.hooks
+
+    _terminate_torn_line(out)
+    done = finished_run_ids(out)
+    new: list[RunRecord] = []
+    for item in plan:
+        if item.run_id in done:
+            log(f"skip {item.run_id} (finished)")
+            continue
+        sc = Scenario.model_validate_json((scen_dir / f"{item.scenario_id}.json").read_text())
+        hooks = build_hooks(item.variant, sc, derive_seed(plan_seed, item.run_id))
+        rec = run_pipeline(
+            sc,
+            llm,
+            run_id=item.run_id,
+            variant=item.variant,
+            twin_run_id=item.twin_run_id,
+            twin_success=True,
+            hooks=hooks,
+        )
+        rec.foreign_models = check_foreign()
+        _append(out, rec)
+        new.append(rec)
+        _say(rec, log)
+    return new
+
+
+def write_eligibility(eligibility: dict[str, tuple[int, int]], path: Path) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    lines = ["incident_type,eligible,clean_runs,rate"]
+    for t, (ok, n) in eligibility.items():
+        lines.append(f"{t},{ok},{n},{ok / n:.3f}" if n else f"{t},0,0,")
+    tot_ok = sum(o for o, _ in eligibility.values())
+    tot_n = sum(n for _, n in eligibility.values())
+    lines.append(f"ALL,{tot_ok},{tot_n},{tot_ok / tot_n:.3f}" if tot_n else "ALL,0,0,")
+    path.write_text("\n".join(lines) + "\n")
+
+
 def main(argv: list[str] | None = None) -> None:
+    from ..agents import OllamaClient  # local import keeps tests free of the HTTP client
+    from ..faults import plan_faulted
+
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--config", type=Path, default=Path("configs/experiment.yaml"))
     ap.add_argument("--out", type=Path, default=OUT)
-    ap.add_argument("--limit", type=int, help="run at most this many clean runs")
+    ap.add_argument("--phase", choices=["clean", "faulted", "all"], default="all")
+    ap.add_argument("--limit", type=int, help="run at most this many NEW runs per phase")
+    ap.add_argument("--variants", help="faulted phase: comma-separated variants to run")
+    ap.add_argument("--scenarios", help="faulted phase: comma-separated scenario ids to run")
+    ap.add_argument("--eligibility-out", type=Path, default=Path("results/eligibility.csv"))
     a = ap.parse_args(argv)
 
     cfg: dict[str, Any] = yaml.safe_load(a.config.read_text())
     model = cfg["models"]["agent"]
     mix = cfg["run_mix"]
-    ids = plan_clean(SCEN_DIR, mix["clean"], mix.get("first_seed", cfg["scenarios"]["base_seed"]))
-    if a.limit is not None:
-        todo = [i for i in ids if clean_run_id(i) not in finished_run_ids(a.out)]
-        ids = [i for i in ids if i in todo[: a.limit] or clean_run_id(i) in finished_run_ids(a.out)]
-    print(f"clean phase: {len(ids)} scenarios -> {a.out}")
     guard.preflight(model)  # exits if any other model is loaded
-    from ..agents import OllamaClient  # local import keeps tests free of the HTTP client
-
     llm = OllamaClient(model=model, num_ctx=cfg["models"]["num_ctx"])
+    foreign = lambda: guard.check_after_run(model)  # noqa: E731
     try:
-        run_clean_phase(ids, llm, a.out, check_foreign=lambda: guard.check_after_run(model))
+        if a.phase in ("clean", "all"):
+            ids = plan_clean(SCEN_DIR, mix["clean"], mix["first_seed"])
+            if a.limit is not None:
+                fin = finished_run_ids(a.out)
+                todo = [i for i in ids if clean_run_id(i) not in fin][: a.limit]
+                ids = [i for i in ids if i in todo or clean_run_id(i) in fin]
+            print(f"clean phase: {len(ids)} scenarios -> {a.out}")
+            run_clean_phase(ids, llm, a.out, check_foreign=foreign)
+        if a.phase in ("faulted", "all"):
+            clean = [r for r in read_records(a.out) if r.get("variant") is None]
+            plan = plan_faulted(
+                clean,
+                per_variant=mix["per_variant"],
+                variants=tuple(mix["variants"]),
+                seed=mix["plan_seed"],
+            )
+            write_eligibility(plan.eligibility, a.eligibility_out)
+            print(f"eligibility (clean successes / clean runs): {plan.eligibility}")
+            print(f"planned {len(plan.runs)} faulted runs; shortfall per variant: {plan.shortfall}")
+            runs = plan.runs
+            if a.variants:
+                runs = [r for r in runs if r.variant in a.variants.split(",")]
+            if a.scenarios:
+                runs = [r for r in runs if r.scenario_id in a.scenarios.split(",")]
+            if a.limit is not None:
+                fin = finished_run_ids(a.out)
+                runs = [r for r in runs if r.run_id in fin] + [
+                    r for r in runs if r.run_id not in fin
+                ][: a.limit]
+            print(f"faulted phase: {len(runs)} runs -> {a.out}")
+            run_faulted_phase(runs, llm, a.out, plan_seed=mix["plan_seed"], check_foreign=foreign)
     finally:
         llm.unload()
-    done = [json.loads(x) for x in a.out.read_text().splitlines() if x.strip()]
-    n = len(done)
-    ok = sum(r["outcome"] == "clean_success" for r in done)
-    print(f"\n{n} clean runs on file: {ok} clean_success, {n - ok} natural_failure")
+    done = read_records(a.out)
+    by: dict[str, int] = {}
+    for r in done:
+        by[r["outcome"]] = by.get(r["outcome"], 0) + 1
+    print(f"\n{len(done)} runs on file: {by}")
     bad = [r["run_id"] for r in done if r.get("foreign_models")]
     print(f"foreign model detected: {bad if bad else 'none'}")
     sys.stdout.flush()
