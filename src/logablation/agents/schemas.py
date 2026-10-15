@@ -19,6 +19,9 @@ Action = StrEnum("Action", {a: a for a in ACTIONS.values()})
 Service = StrEnum("Service", {s: s for s in SERVICES})
 ToolName = StrEnum("ToolName", {t: t for t in TOOL_NAMES})
 
+MAX_FINDINGS = 10
+MAX_FINDING_CHARS = 200
+
 Confidence = Field(ge=0.0, le=1.0, description="0 = guess, 1 = certain")
 
 
@@ -56,12 +59,15 @@ class ActionPlan(BaseModel):
 # trusted to copy those, and a copying slip would be an artefact, not a pipeline fault.
 class FindingDraft(BaseModel):
     source: ToolName
-    value: str = Field(description="one short fact with concrete numbers, times or names")
+    value: str = Field(
+        max_length=MAX_FINDING_CHARS,
+        description="one short fact with concrete numbers, times or names; no opinions",
+    )
 
 
 class EvidenceDraft(BaseModel):
     affected_service: Service = Field(
         description="the service where the evidence says the problem originates"
     )
-    findings: list[FindingDraft] = Field(min_length=1, max_length=8)
+    findings: list[FindingDraft] = Field(min_length=1, max_length=MAX_FINDINGS)
     evidence_confidence: float = Confidence

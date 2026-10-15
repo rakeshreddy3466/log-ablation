@@ -291,3 +291,61 @@ def test_client_refuses_oversized_context_and_unload_uses_keep_alive_zero() -> N
     path, p = c.sent
     assert path == "/api/generate" and p["keep_alive"] == 0 and p["model"] == "qwen2.5:7b"
     assert p["options"]["num_ctx"] == 8192
+
+
+# ---- prompt freeze v1: finding limits, dedup, runbook ---------------------------------------
+
+
+def _draft(findings: list[dict[str, str]]) -> str:
+    return json.dumps(
+        {"affected_service": "checkout", "evidence_confidence": 0.5, "findings": findings}
+    )
+
+
+def test_draft_limits_are_10_findings_and_200_chars() -> None:
+    f = {"source": "get_logs", "value": "x"}
+    EvidenceDraft.model_validate_json(_draft([f] * 10))
+    with pytest.raises(ValidationError):
+        EvidenceDraft.model_validate_json(_draft([f] * 11))
+    EvidenceDraft.model_validate_json(_draft([{"source": "get_logs", "value": "a" * 200}]))
+    with pytest.raises(ValidationError):
+        EvidenceDraft.model_validate_json(_draft([{"source": "get_logs", "value": "a" * 201}]))
+    schema = EvidenceDraft.model_json_schema()
+    assert schema["properties"]["findings"]["maxItems"] == 10
+    assert schema["$defs"]["FindingDraft"]["properties"]["value"]["maxLength"] == 200
+
+
+def test_dedupe_exact_near_and_distinct() -> None:
+    from logablation.agents.agents import dedupe_findings
+
+    rows = [
+        ("get_logs", "cache evicted 583 keys in 1s (maxmemory-policy=allkeys-lru)"),
+        ("get_logs", "Cache evicted 583 keys in 1s (maxmemory-policy=allkeys-lru)"),  # exact
+        ("get_logs", "cache evicted 583 keys in 1s (maxmemory-policy=allkeys-lru) again"),  # near
+        ("get_logs", "cache evicted 532 keys in 1s (maxmemory-policy=allkeys-lru)"),  # new number
+        ("get_alerts", "cache evicted 583 keys in 1s (maxmemory-policy=allkeys-lru)"),  # source
+    ]
+    kept, removed = dedupe_findings(rows)
+    assert removed == 2 and kept == [rows[0], rows[3], rows[4]]
+    assert dedupe_findings([]) == ([], 0)
+
+
+def test_evidence_agent_dedupes_and_records_count() -> None:
+    _, ticket, tools = _scenario_parts()
+    f = {"source": "get_logs", "value": "timeout acquiring connection from pool"}
+    g = {"source": "get_metrics", "value": "db_pool_in_use 50 at 09:31"}
+    res = evidence_agent(ticket, tools, FakeLLM([_draft([f, g, f, f])]))
+    assert isinstance(res.output, EvidenceBundle)
+    assert [x.id for x in res.output.findings] == ["f1", "f2"]
+    assert res.meta == {"findings_returned": 4, "duplicates_removed": 2}
+
+
+def test_runbook_covers_all_types_with_matching_shape() -> None:
+    from logablation.agents.prompts import SIGNATURES
+
+    assert set(SIGNATURES) == set(INCIDENT_TYPES)
+    lengths = [len(v) for v in SIGNATURES.values()]
+    assert max(lengths) <= 1.4 * min(lengths)
+    for v in SIGNATURES.values():
+        assert v.startswith("Present: ") and ". Absent: " in v
+    assert len(set(SIGNATURES.values())) == 6

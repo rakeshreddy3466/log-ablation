@@ -6,6 +6,7 @@ faults wrap the LLMClient, handover faults act on the objects between these func
 
 from __future__ import annotations
 
+import re
 from collections import deque
 from collections.abc import Mapping
 from dataclasses import dataclass, field
@@ -34,6 +35,7 @@ class AgentResult:
     output: BaseModel | None  # the validated object, or None = recorded failure
     llm: StructuredResult
     tool_calls: list[dict[str, Any]] = field(default_factory=list)
+    meta: dict[str, Any] = field(default_factory=dict)  # e.g. duplicates removed
 
     @property
     def ok(self) -> bool:
@@ -82,25 +84,60 @@ def gather_evidence(ticket: IncidentTicket, tools: ToolContext) -> list[dict[str
     return calls
 
 
+_TOKEN = re.compile(r"[a-z0-9_.:\-]+")
+NEAR_DUPLICATE_JACCARD = 0.8
+
+
+def _tokens(text: str) -> frozenset[str]:
+    return frozenset(_TOKEN.findall(text.lower()))
+
+
+def dedupe_findings(values: list[tuple[str, str]]) -> tuple[list[tuple[str, str]], int]:
+    """Drop exact and near-duplicate findings, keeping the first. Returns (kept, removed).
+
+    Findings are (source, value). Near-duplicate = same source and token-set Jaccard >= 0.8;
+    numbers are tokens, so facts that differ only in a number are NOT duplicates.
+    """
+    kept: list[tuple[str, str]] = []
+    kept_tokens: list[frozenset[str]] = []
+    for source, value in values:
+        toks = _tokens(value)
+        dup = any(
+            src == source
+            and (
+                toks == t
+                or (t and toks and len(toks & t) / len(toks | t) >= NEAR_DUPLICATE_JACCARD)
+            )
+            for (src, _), t in zip(kept, kept_tokens, strict=True)
+        )
+        if not dup:
+            kept.append((source, value))
+            kept_tokens.append(toks)
+    return kept, len(values) - len(kept)
+
+
 def evidence_agent(ticket: IncidentTicket, tools: ToolContext, llm: LLMClient) -> AgentResult:
     calls = gather_evidence(ticket, tools)
     res = generate_structured(
         llm, EvidenceDraft, EVIDENCE_SYSTEM, render_evidence_user(ticket, calls)
     )
     bundle = None
+    meta: dict[str, Any] = {}
     if isinstance(res.parsed, EvidenceDraft):
         d = res.parsed
+        raw = [(str(f.source), f.value) for f in d.findings]
+        kept, removed = dedupe_findings(raw)
+        meta = {"findings_returned": len(raw), "duplicates_removed": removed}
         bundle = EvidenceBundle(
             incident_id=ticket.incident_id,
             affected_service=str(d.affected_service),
             time_window=ticket.time_window,
             findings=[
-                Finding(id=f"f{i}", source=str(f.source), value=f.value)
-                for i, f in enumerate(d.findings, 1)
+                Finding(id=f"f{i}", source=src, value=val) for i, (src, val) in enumerate(kept, 1)
             ],
             evidence_confidence=d.evidence_confidence,
         )
-    return AgentResult(output=bundle, llm=res, tool_calls=calls)
+    return AgentResult(output=bundle, llm=res, tool_calls=calls, meta=meta)
 
 
 def reasoning_agent(bundle: EvidenceBundle | Mapping[str, Any], llm: LLMClient) -> AgentResult:
