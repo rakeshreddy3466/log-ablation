@@ -1,0 +1,54 @@
+clean_baseline_v1  prompts frozen at commit cd47821  model=qwen2.5:3b num_ctx=8192 temp=0 seed=7  2026-10-15T15:58Z
+scenarios (12): ['sc-01100', 'sc-01101', 'sc-01102', 'sc-01103', 'sc-01104', 'sc-01105', 'sc-01106', 'sc-01107', 'sc-01108', 'sc-01109', 'sc-01110', 'sc-01111']
+ollama ps before:
+NAME    ID    SIZE    PROCESSOR    CONTEXT    RUNNER    UNTIL 
+
+sc-01100 memory_leak            truth_rc=memory_leak            got_rc=memory_leak            root_cause=OK  action=OK  dups_removed=1 retries=0 failed_step=None 42s
+sc-01101 cross_zone_latency     truth_rc=cross_zone_latency     got_rc=bad_deploy             root_cause=BAD action=BAD dups_removed=3 retries=0 failed_step=None 30s
+sc-01102 expired_certificate    truth_rc=expired_certificate    got_rc=expired_certificate    root_cause=OK  action=OK  dups_removed=0 retries=0 failed_step=None 34s
+sc-01103 cache_eviction_storm   truth_rc=cache_eviction_storm   got_rc=cache_eviction_storm   root_cause=OK  action=BAD dups_removed=3 retries=1 failed_step=action 632s
+sc-01104 db_pool_exhausted      truth_rc=db_pool_exhausted      got_rc=None                   root_cause=BAD action=BAD dups_removed=0 retries=2 failed_step=reasoning 984s
+Traceback (most recent call last):
+  File "/Users/rakeshreddy/Projects/log-ablation/scripts/smoke_agents.py", line 149, in <module>
+    main()
+  File "/Users/rakeshreddy/Projects/log-ablation/scripts/smoke_agents.py", line 86, in main
+    ev = evidence_agent(ticket, ToolContext(sc), llm)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/rakeshreddy/Projects/log-ablation/src/logablation/agents/agents.py", line 121, in evidence_agent
+    res = generate_structured(
+          ^^^^^^^^^^^^^^^^^^^^
+  File "/Users/rakeshreddy/Projects/log-ablation/src/logablation/agents/structured.py", line 88, in generate_structured
+    reply = llm.chat(
+            ^^^^^^^^^
+  File "/Users/rakeshreddy/Projects/log-ablation/src/logablation/agents/llm.py", line 120, in chat
+    body = self._post("/api/chat", payload)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/rakeshreddy/Projects/log-ablation/src/logablation/agents/llm.py", line 103, in _post
+    with urllib.request.urlopen(req, timeout=self.timeout_s) as r:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.12/3.12.8/Frameworks/Python.framework/Versions/3.12/lib/python3.12/urllib/request.py", line 215, in urlopen
+    return opener.open(url, data, timeout)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.12/3.12.8/Frameworks/Python.framework/Versions/3.12/lib/python3.12/urllib/request.py", line 515, in open
+    response = self._open(req, data)
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.12/3.12.8/Frameworks/Python.framework/Versions/3.12/lib/python3.12/urllib/request.py", line 532, in _open
+    result = self._call_chain(self.handle_open, protocol, protocol +
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.12/3.12.8/Frameworks/Python.framework/Versions/3.12/lib/python3.12/urllib/request.py", line 492, in _call_chain
+    result = func(*args)
+             ^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.12/3.12.8/Frameworks/Python.framework/Versions/3.12/lib/python3.12/urllib/request.py", line 1373, in http_open
+    return self.do_open(http.client.HTTPConnection, req)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.12/3.12.8/Frameworks/Python.framework/Versions/3.12/lib/python3.12/urllib/request.py", line 1348, in do_open
+    r = h.getresponse()
+        ^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.12/3.12.8/Frameworks/Python.framework/Versions/3.12/lib/python3.12/http/client.py", line 1428, in getresponse
+    response.begin()
+  File "/opt/homebrew/Cellar/python@3.12/3.12.8/Frameworks/Python.framework/Versions/3.12/lib/python3.12/http/client.py", line 331, in begin
+    version, status, reason = self._read_status()
+                              ^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.12/3.12.8/Frameworks/Python.framework/Versions/3.12/lib/python3.12/http/client.py", line 300, in _read_status
+    raise RemoteDisconnected("Remote end closed connection without"
+http.client.RemoteDisconnected: Remote end closed connection without response

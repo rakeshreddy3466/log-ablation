@@ -349,3 +349,26 @@ def test_runbook_covers_all_types_with_matching_shape() -> None:
     for v in SIGNATURES.values():
         assert v.startswith("Present: ") and ". Absent: " in v
     assert len(set(SIGNATURES.values())) == 6
+
+
+def test_dropped_connection_is_a_recorded_failure_not_a_crash() -> None:
+    import socket
+    import threading
+
+    srv = socket.socket()
+    srv.bind(("127.0.0.1", 0))
+    srv.listen(1)
+
+    def accept_and_close() -> None:
+        conn, _ = srv.accept()
+        conn.recv(65536)
+        conn.close()  # server hangs up without answering -> RemoteDisconnected
+
+    t = threading.Thread(target=accept_and_close, daemon=True)
+    t.start()
+    client = OllamaClient(url=f"http://127.0.0.1:{srv.getsockname()[1]}", timeout_s=5)
+    r = generate_structured(client, Diagnosis, "s", "u")
+    t.join(5)
+    srv.close()
+    assert not r.ok and r.error is not None and "llm_error" in r.error
+    assert len(r.attempts) == 2

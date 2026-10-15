@@ -7,9 +7,9 @@ schema and ``logprobs`` is always on. Everything the tracer will need comes back
 
 from __future__ import annotations
 
+import http.client
 import json
 import time
-import urllib.error
 import urllib.request
 from dataclasses import dataclass
 from typing import Any, Protocol
@@ -102,7 +102,8 @@ class OllamaClient:
         try:
             with urllib.request.urlopen(req, timeout=self.timeout_s) as r:
                 return json.loads(r.read())
-        except (urllib.error.URLError, TimeoutError, json.JSONDecodeError) as e:
+        except (OSError, http.client.HTTPException, json.JSONDecodeError) as e:
+            # URLError, timeouts and RemoteDisconnected are all OSError/HTTPException
             raise LLMError(f"ollama {path} failed: {e}") from e
 
     def chat(
