@@ -1,0 +1,38 @@
+clean_baseline_v1  prompts frozen at commit cd47821  model=qwen2.5:3b num_ctx=8192 temp=0 seed=7  2026-10-15T16:48Z  guard=agents.guard (preflight + per-run /api/ps check)
+scenarios (12): ['sc-01100', 'sc-01101', 'sc-01102', 'sc-01103', 'sc-01104', 'sc-01105', 'sc-01106', 'sc-01107', 'sc-01108', 'sc-01109', 'sc-01110', 'sc-01111']
+preflight ok: no model other than qwen2.5:3b is loaded
+ollama ps before:
+NAME    ID    SIZE    PROCESSOR    CONTEXT    RUNNER    UNTIL 
+
+sc-01100 memory_leak            truth_rc=memory_leak            got_rc=memory_leak            root_cause=OK  action=OK  dups_removed=1 retries=0 failed_step=None 43s
+sc-01101 cross_zone_latency     truth_rc=cross_zone_latency     got_rc=bad_deploy             root_cause=BAD action=BAD dups_removed=3 retries=0 failed_step=None 31s
+sc-01102 expired_certificate    truth_rc=expired_certificate    got_rc=expired_certificate    root_cause=OK  action=OK  dups_removed=0 retries=0 failed_step=None 35s
+sc-01103 cache_eviction_storm   truth_rc=cache_eviction_storm   got_rc=cache_eviction_storm   root_cause=OK  action=OK  dups_removed=3 retries=0 failed_step=None 34s
+sc-01104 db_pool_exhausted      truth_rc=db_pool_exhausted      got_rc=db_pool_exhausted      root_cause=OK  action=OK  dups_removed=0 retries=0 failed_step=None 35s
+sc-01105 bad_deploy             truth_rc=bad_deploy             got_rc=bad_deploy             root_cause=OK  action=OK  dups_removed=1 retries=0 failed_step=None 35s
+sc-01106 memory_leak            truth_rc=memory_leak            got_rc=memory_leak            root_cause=OK  action=OK  dups_removed=2 retries=0 failed_step=None 35s
+sc-01107 cross_zone_latency     truth_rc=cross_zone_latency     got_rc=memory_leak            root_cause=BAD action=BAD dups_removed=3 retries=0 failed_step=None 31s
+sc-01108 expired_certificate    truth_rc=expired_certificate    got_rc=expired_certificate    root_cause=OK  action=OK  dups_removed=4 retries=0 failed_step=None 37s
+sc-01109 cache_eviction_storm   truth_rc=cache_eviction_storm   got_rc=cache_eviction_storm   root_cause=OK  action=OK  dups_removed=3 retries=0 failed_step=None 33s
+sc-01110 db_pool_exhausted      truth_rc=db_pool_exhausted      got_rc=db_pool_exhausted      root_cause=OK  action=OK  dups_removed=5 retries=0 failed_step=None 30s
+sc-01111 bad_deploy             truth_rc=bad_deploy             got_rc=bad_deploy             root_cause=OK  action=OK  dups_removed=5 retries=0 failed_step=None 35s
+
+SUMMARY over 12 scenarios
+  root_cause accuracy: 10/12 = 83.3%
+  action accuracy:     10/12 = 83.3%
+  both (run success):  10/12 = 83.3%
+  mean time per run:   34.4s
+  agent failures (schema, after retry): 0
+  total retries: 0   duplicate findings removed: 30
+  foreign model detected: none
+  per incident type (root_cause ok / n):
+    db_pool_exhausted      2/2
+    bad_deploy             2/2
+    memory_leak            2/2
+    cross_zone_latency     0/2
+    expired_certificate    2/2
+    cache_eviction_storm   2/2
+
+ollama ps after unload:
+NAME    ID    SIZE    PROCESSOR    CONTEXT    RUNNER    UNTIL 
+

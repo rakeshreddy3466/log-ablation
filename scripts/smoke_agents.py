@@ -10,7 +10,7 @@ import subprocess
 import time
 from pathlib import Path
 
-from logablation.agents import OllamaClient, action_agent, evidence_agent, reasoning_agent
+from logablation.agents import OllamaClient, action_agent, evidence_agent, guard, reasoning_agent
 from logablation.scenarios.models import Scenario
 from logablation.scenarios.taxonomy import INCIDENT_TYPES
 from logablation.tools import ToolContext, build_ticket
@@ -57,6 +57,7 @@ def main() -> None:
     a = ap.parse_args()
     ids = a.ids or (pick_clean(a.n, a.first_seed) if a.n else DEFAULT)
     print(f"scenarios ({len(ids)}): {ids}")
+    guard.preflight(MODEL)
     ps = subprocess.run(["ollama", "ps"], capture_output=True, text=True).stdout
     print("ollama ps before:\n" + ps)
     llm = OllamaClient(model=MODEL)
@@ -76,6 +77,7 @@ def main() -> None:
             "dups": 0,
             "retries": 0,
             "secs": 0.0,
+            "foreign": [],
         }
         if not a.quiet:
             print(f"\n===== {sid} ({sc.incident_type}) symptom={ticket.symptom_service}")
@@ -108,12 +110,14 @@ def main() -> None:
         if len(steps) < 3 and row["failed"] is None:
             row["failed"] = "unknown"
         row["secs"] = time.perf_counter() - t0
+        row["foreign"] = guard.check_after_run(MODEL)
         tally.append(row)
         print(
             f"{sid} {sc.incident_type:<22} truth_rc={gt.root_cause:<22} got_rc={row['got']!s:<22} "
             f"root_cause={'OK ' if row['rc'] else 'BAD'} action={'OK ' if row['ac'] else 'BAD'} "
             f"dups_removed={row['dups']} retries={row['retries']} failed_step={row['failed']} "
             f"{row['secs']:.0f}s"
+            + (f" CONTAMINATED foreign={row['foreign']}" if row["foreign"] else "")
         )
     n = len(tally)
     print(f"\nSUMMARY over {n} scenarios")
@@ -133,6 +137,9 @@ def main() -> None:
         f"  total retries: {sum(r['retries'] for r in tally)}   "
         f"duplicate findings removed: {sum(r['dups'] for r in tally)}"
     )
+    bad = [r for r in tally if r["foreign"]]
+    verdict = f"YES in {len(bad)} runs: {[r['id'] for r in bad]}" if bad else "none"
+    print(f"  foreign model detected: {verdict}")
     print("  per incident type (root_cause ok / n):")
     for t in INCIDENT_TYPES:
         rs = [r for r in tally if r["type"] == t]

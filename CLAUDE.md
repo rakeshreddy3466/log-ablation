@@ -88,12 +88,14 @@ opening the holdout. Then score full, profile and skeleton on the holdout. Repor
 
 ## Hardware and models (MacBook Pro M2, 8 GB)
 - Agents: qwen2.5:3b via Ollama. Judge: qwen2.5:7b, run alone after agents finish;
-  fallback judge phi4-mini, then llama3.2:3b (both already installed).
+  fallback judge phi4-mini only. Installed models: qwen2.5:3b, qwen2.5:7b, phi4-mini.
 - Measured on this Mac: qwen2.5:3b = 2.5 GB, 100% GPU, about 39 tokens/s generation at num_ctx 8192.
 - ALWAYS pass options={"num_ctx": 8192} (judge may use up to 8192, never more) on every Ollama request.
   Never rely on the global default: a 131072 context once made a 3B model take 23 GB and hang the Mac.
 - Only one model loaded at a time. Ollama with one request at a time. Before each phase, check
-  `ollama ps` shows no other model loaded; unload with keep_alive=0 when switching agent -> judge model.
+  `ollama ps` shows no other model loaded; every run script calls `agents.guard.preflight(model)`
+  (reads /api/ps, exits on any foreign model) and records `guard.check_after_run` after each run;
+  unload with keep_alive=0 when switching agent -> judge model.
 - Ollama 0.40.4 is installed and VERIFIED to return token logprobs: pass "logprobs": true (and optionally
   "top_logprobs": N) to /api/generate or /api/chat; the response has a "logprobs" list of
   {token, logprob, bytes}. Use this for C4. No mlx-lm needed.

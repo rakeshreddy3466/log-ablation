@@ -1,3 +1,4 @@
+from . import guard
 from .agents import AgentResult, action_agent, evidence_agent, reasoning_agent
 from .llm import NUM_CTX, LLMClient, LLMError, LLMReply, OllamaClient
 from .schemas import ActionPlan, Diagnosis, EvidenceBundle, Finding
@@ -16,6 +17,7 @@ __all__ = [
     "OllamaClient",
     "StructuredResult",
     "action_agent",
+    "guard",
     "evidence_agent",
     "generate_structured",
     "reasoning_agent",

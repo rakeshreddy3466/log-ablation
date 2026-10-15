@@ -13,7 +13,7 @@ run_mix:                 # 300 runs = 60 clean + 30 per variant; adjust after th
 models:
   agent: qwen2.5:3b
   judge: qwen2.5:7b
-  judge_fallbacks: [phi4-mini, llama3.2:3b]
+  judge_fallbacks: [phi4-mini]
   num_ctx: 8192          # always passed on every Ollama request
 
 split:
